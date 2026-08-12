@@ -1,0 +1,1305 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Image,
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Linking,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSelector } from 'react-redux';
+import { useFocusEffect } from '@react-navigation/native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSocket } from '../../../context/SocketContext';
+import clinicalApi from '../api';
+import { colors } from '../../../theme/colors';
+
+const { width } = Dimensions.get('window');
+
+export default function PatientDashboardScreen({ navigation }) {
+  const { token, user } = useSelector((state) => state.auth);
+  const socket = useSocket();
+
+  const [activeProgram, setActiveProgram] = useState(null);
+  const [exercises, setExercises] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+      const fetchClinicalData = async () => {
+        setLoading(true);
+        try {
+          const progRes = await clinicalApi.getActiveProgram(token);
+          if (isMounted && progRes.success) {
+            setActiveProgram(progRes.data?.assignment || progRes.data);
+          }
+
+          const exRes = await clinicalApi.getTodaysExercises(token);
+          if (isMounted && exRes.success && exRes.data) {
+            setExercises(exRes.data.exercises || exRes.data || []);
+          }
+        } catch (err) {
+          console.warn('[Dashboard] Fetch error:', err.message);
+        } finally {
+          if (isMounted) setLoading(false);
+        }
+      };
+      fetchClinicalData();
+      return () => { isMounted = false; };
+    }, [token])
+  );
+
+  useEffect(() => {
+    if (socket) {
+      socket.on('receive_message', (msg) => {
+        Alert.alert('Message from Therapist', msg.text);
+      });
+      socket.on('program_updated', () => {
+        Alert.alert('Program Updated', 'Your therapist updated your recovery program.');
+      });
+      return () => {
+        socket.off('receive_message');
+        socket.off('program_updated');
+      };
+    }
+  }, [socket]);
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return 'Good Morning';
+    if (hour >= 12 && hour < 17) return 'Good Afternoon';
+    if (hour >= 17 && hour < 22) return 'Good Evening';
+    return 'Good Evening';
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* HEADER SECTION */}
+        <View style={styles.headerRow}>
+          <View style={styles.userProfileRow}>
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarInitial}>
+                {user?.name ? user.name.charAt(0).toUpperCase() : 'S'}
+              </Text>
+            </View>
+            <View style={styles.userInfo}>
+              <Text style={styles.greetingText}>
+                {getGreeting()}, {user?.name || 'Sagar'} 👋
+              </Text>
+              <Text style={styles.subGreetingText}>Let's continue your recovery journey.</Text>
+            </View>
+          </View>
+
+          <TouchableOpacity style={styles.notificationBtn} onPress={() => navigation.navigate('Notifications')}>
+            <Ionicons name="notifications-outline" size={22} color="#0f172a" />
+            <View style={styles.notificationDot} />
+          </TouchableOpacity>
+        </View>
+
+        {/* SEARCH BAR */}
+        <View style={styles.searchBar}>
+          <Ionicons name="search" size={18} color="#64748b" style={{ marginRight: 8 }} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search therapists, clinics or treatments"
+            placeholderTextColor="#94a3b8"
+          />
+        </View>
+
+        {/* TODAY'S APPOINTMENT HERO CARD */}
+        <LinearGradient
+          colors={['#046582', '#004c8f', '#002663']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.appointmentHeroCard}
+        >
+          <View style={styles.heroHeaderRow}>
+            <Text style={styles.heroCardBadgeLabel}>TODAY'S APPOINTMENT</Text>
+            <View style={styles.heroDateBadge}>
+              <Ionicons name="calendar-outline" size={13} color="#ffffff" style={{ marginRight: 5 }} />
+              <Text style={styles.heroDateText}>Oct 24</Text>
+            </View>
+          </View>
+
+          <Text style={styles.heroTimeText}>10:30 AM</Text>
+
+          <View style={styles.doctorInfoRow}>
+            <View style={styles.doctorIconBox}>
+              <Ionicons name="person-outline" size={14} color="#38bdf8" />
+              <View style={styles.doctorCheckBadge}>
+                <Ionicons name="checkmark" size={7} color="#ffffff" />
+              </View>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.doctorNameText}>Dr. Sarah Johnson</Text>
+              <Text style={styles.doctorSpecialtyText}>Orthopedic Physiotherapist</Text>
+            </View>
+          </View>
+
+          <View style={styles.locationRow}>
+            <Ionicons name="location-outline" size={16} color="#38bdf8" style={{ marginRight: 6 }} />
+            <Text style={styles.locationText}>ONE MEDICAL Clinic, Hyderabad</Text>
+          </View>
+
+          <View style={styles.heroActionsRow}>
+            <TouchableOpacity
+              style={styles.heroBtnPrimary}
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('AppointmentDetail', { booking: { id: '#APT-2024-7719', doctorName: 'Dr. Sarah Johnson', specialty: 'Orthopedic Physiotherapist', status: 'Upcoming', date: 'Today • 10:30 AM', clinic: 'ONE MEDICAL Clinic, Hyderabad', address: 'Plot 42, Road 36, Jubilee Hills, Hyderabad', avatar: require('../../../../assets/images/therapist_female_1.png') } })}
+            >
+              <Text style={styles.heroBtnPrimaryText}>View Details</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.heroBtnSecondary}
+              activeOpacity={0.85}
+              onPress={() => {
+                const query = encodeURIComponent('ONE MEDICAL Clinic Jubilee Hills Hyderabad');
+                Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`).catch(() => { });
+              }}
+            >
+              <Text style={styles.heroBtnSecondaryText}>Get Directions</Text>
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+
+        {/* YOUR RECOVERY SECTION */}
+        <View style={styles.sectionHeaderRow}>
+          <View>
+            <Text style={styles.sectionTitle}>Your Recovery</Text>
+            <Text style={styles.sectionSubTitle}>Keep up the great progress!</Text>
+          </View>
+        </View>
+
+        <View style={styles.recoveryCard}>
+          {/* Centered Circular Gauge */}
+          <View style={styles.circleOuterGauge}>
+            <View style={styles.circleInnerGauge}>
+              <Text style={styles.circlePercentageText}>{activeProgram?.recoveryScore || 72}%</Text>
+              <Text style={styles.circleLabelText}>OVERALL</Text>
+            </View>
+          </View>
+
+          {/* Recovery Score Title */}
+          <Text style={styles.recoveryScoreTitle}>
+            Recovery Score <Text style={styles.scoreBold}>{activeProgram?.recoveryScore || 72}%</Text>
+          </Text>
+
+          {/* Trend Row */}
+          <View style={styles.trendRow}>
+            <Text style={styles.trendLabel}>Improving steadily</Text>
+            <View style={styles.trendBadge}>
+              <Ionicons name="trending-up" size={13} color="#003D9B" style={{ marginRight: 4 }} />
+              <Text style={styles.trendBadgeText}>+8% this week</Text>
+            </View>
+          </View>
+
+          {/* Week Badge */}
+          <View style={styles.weekBadgePill}>
+            <Ionicons name="ribbon-outline" size={15} color="#003D9B" style={{ marginRight: 6 }} />
+            <Text style={styles.weekBadgePillText}>
+              Week {activeProgram && activeProgram.startDate && !isNaN(new Date(activeProgram.startDate).getTime()) ? Math.max(1, Math.floor((new Date() - new Date(activeProgram.startDate)) / (1000 * 60 * 60 * 24 * 7)) + 1) : 4} of Recovery
+            </Text>
+          </View>
+
+          {/* Quote Text */}
+          <Text style={styles.recoveryQuoteText}>
+            "{activeProgram?.patientGoals || "You're making excellent progress."}"
+          </Text>
+        </View>
+
+        {/* TODAY'S EXERCISES SECTION */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitle}>Today's Exercises</Text>
+          <Text style={styles.exerciseMetaText}>⏱️ {(exercises.length || 3) * 6} Minutes total | <Text style={{ fontWeight: '700', color: '#0f172a' }}>{exercises.length || 3} Exercises Assigned</Text></Text>
+        </View>
+
+        {/* Progress Bar */}
+        <View style={styles.progressBarTrack}>
+          <View style={[styles.progressBarFill, { width: '66%' }]} />
+        </View>
+
+        {/* Exercise List with Rich Mock Fallbacks */}
+        <View style={styles.exerciseList}>
+          {(exercises.length > 0 ? exercises : [
+            { _id: 'ex1', name: 'Hamstring Stretch', sets: 3, reps: 10, durationSec: 30, category: 'Legs & Mobility' },
+            { _id: 'ex2', name: 'Pelvic Tilts', sets: 3, reps: 15, durationSec: 45, category: 'Core & Lumbar' },
+            { _id: 'ex3', name: 'Cat-Cow Stretch', sets: 4, reps: 12, durationSec: 60, category: 'Spine Flexibility' },
+          ]).map((item, idx) => (
+            <TouchableOpacity
+              key={item._id || idx}
+              style={styles.exerciseCard}
+              onPress={() => navigation.navigate('ExerciseTimer', { exercise: item })}
+            >
+              <View style={styles.exerciseIconBox}>
+                <Ionicons name="fitness-outline" size={22} color={colors.primary} />
+              </View>
+              <View style={styles.exerciseTextContent}>
+                <Text style={styles.exerciseNameText}>{item.name}</Text>
+                <Text style={styles.exerciseSubText}>
+                  {item.sets} Sets × {item.reps} Reps {item.durationSec ? `(${item.durationSec}s hold)` : ''}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#94a3b8" />
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Start Today's Session CTA */}
+        <TouchableOpacity
+          style={styles.startSessionButton}
+          activeOpacity={0.85}
+          onPress={() => navigation.navigate('ExerciseTimer', { exercise: exercises[0] || { name: 'Hamstring Stretch', sets: 3, reps: 10, durationSec: 30 } })}
+        >
+          <Ionicons name="play" size={16} color="#ffffff" style={{ marginRight: 6 }} />
+          <Text style={styles.startSessionButtonText}>Start Today's Session</Text>
+        </TouchableOpacity>
+
+        {/* QUICK ACTIONS 2x2 GRID */}
+        {/* QUICK ACTIONS 2x2 GRID */}
+        <Text style={[styles.sectionTitle, { marginTop: 24, marginBottom: 14 }]}>Quick Actions</Text>
+
+        <View style={styles.quickGrid}>
+          {/* Card 1: Book Appointment */}
+          <TouchableOpacity
+            style={[styles.quickCard, { backgroundColor: '#eef7ff' }]}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('Book')}
+          >
+            <View style={styles.quickCardTopRow}>
+              <Ionicons name="calendar-outline" size={26} color="#003D9B" />
+              <Ionicons name="chevron-forward" size={16} color="#003D9B" />
+            </View>
+            <Text style={styles.quickTitle}>Book Appointment</Text>
+            <Text style={styles.quickDesc}>Find available time slots.</Text>
+          </TouchableOpacity>
+
+          {/* Card 2: Find Physiotherapist */}
+          <TouchableOpacity
+            style={[styles.quickCard, { backgroundColor: '#e6f8f6' }]}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('Book')}
+          >
+            <View style={styles.quickCardTopRow}>
+              <Ionicons name="medkit-outline" size={26} color="#008774" />
+              <Ionicons name="chevron-forward" size={16} color="#008774" />
+            </View>
+            <Text style={styles.quickTitle}>Find Physiotherapist</Text>
+            <Text style={styles.quickDesc}>Browse specialists near you.</Text>
+          </TouchableOpacity>
+
+          {/* Card 3: Medical Reports */}
+          <TouchableOpacity
+            style={[styles.quickCard, { backgroundColor: '#f5eeff' }]}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('Records')}
+          >
+            <View style={styles.quickCardTopRow}>
+              <Ionicons name="document-text-outline" size={26} color="#7e22ce" />
+              <Ionicons name="chevron-forward" size={16} color="#7e22ce" />
+            </View>
+            <Text style={styles.quickTitle}>Medical Reports</Text>
+            <Text style={styles.quickDesc}>View your reports.</Text>
+          </TouchableOpacity>
+
+          {/* Card 4: Payments */}
+          <TouchableOpacity
+            style={[styles.quickCard, { backgroundColor: '#eaf7ed' }]}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('PaymentsInvoices')}
+          >
+            <View style={styles.quickCardTopRow}>
+              <Ionicons name="card-outline" size={26} color="#15803d" />
+              <Ionicons name="chevron-forward" size={16} color="#15803d" />
+            </View>
+            <Text style={[styles.quickTitle, { color: '#166534' }]}>Payments</Text>
+            <Text style={styles.quickDesc}>Invoices & history.</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* RECOMMENDED PHYSIOTHERAPISTS */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitle}>Recommended Physiotherapists</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Book')}>
+            <Text style={styles.viewAllText}>View All</Text>
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.doctorHorizontalList}
+        >
+          {/* Doctor Card 1 */}
+          <TouchableOpacity
+            style={styles.doctorCard}
+            activeOpacity={0.9}
+            onPress={() => navigation.navigate('TherapistDetail', { therapist: { name: 'Dr. Ananya Iyer', specialty: 'Senior MSK Specialist', experience: '12+ Years Exp', location: '2.4 km away', rating: 4.9, avatar: require('../../../../assets/images/therapist_male_1.png') } })}
+          >
+            <View style={styles.doctorImageWrap}>
+              <Image
+                source={require('../../../../assets/images/therapist_male_1.png')}
+                style={styles.doctorPhoto}
+              />
+              <View style={styles.ratingBadge}>
+                <Text style={styles.ratingText}>
+                  <Text style={{ color: '#f59e0b' }}>★ </Text>4.9
+                </Text>
+              </View>
+              <View style={styles.availBadge}>
+                <Text style={styles.availBadgeText}>AVAILABLE TODAY</Text>
+              </View>
+            </View>
+            <Text style={styles.docNameText}>Dr. Ananya Iyer</Text>
+            <Text style={styles.docSpecText}>Senior MSK Specialist</Text>
+            <Text style={styles.docExpText}>12+ Years Exp • 2.4 km away</Text>
+
+            <TouchableOpacity
+              style={styles.docBookBtn}
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('Book')}
+            >
+              <Text style={styles.docBookBtnText}>Book Appointment</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+
+          {/* Doctor Card 2 */}
+          <TouchableOpacity
+            style={styles.doctorCard}
+            activeOpacity={0.9}
+            onPress={() => navigation.navigate('TherapistDetail', { therapist: { name: 'Dr. Arjun Mehta', specialty: 'Sports Rehab Specialist', experience: '10+ Years Exp', location: '3.1 km away', rating: 4.8, avatar: require('../../../../assets/images/therapist_female_1.png') } })}
+          >
+            <View style={styles.doctorImageWrap}>
+              <Image
+                source={require('../../../../assets/images/therapist_female_1.png')}
+                style={styles.doctorPhoto}
+              />
+              <View style={styles.ratingBadge}>
+                <Text style={styles.ratingText}>
+                  <Text style={{ color: '#f59e0b' }}>★ </Text>4.8
+                </Text>
+              </View>
+              <View style={styles.availBadge}>
+                <Text style={styles.availBadgeText}>AVAILABLE TODAY</Text>
+              </View>
+            </View>
+            <Text style={styles.docNameText}>Dr. Arjun Mehta</Text>
+            <Text style={styles.docSpecText}>Sports Rehab Specialist</Text>
+            <Text style={styles.docExpText}>10+ Years Exp • 3.1 km away</Text>
+
+            <TouchableOpacity
+              style={styles.docBookBtn}
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('Book')}
+            >
+              <Text style={styles.docBookBtnText}>Book Appointment</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </ScrollView>
+
+        {/* POPULAR SERVICES GRID */}
+        <Text style={[styles.sectionTitle, { marginTop: 24, marginBottom: 14, color: '#003D9B', fontSize: 13, letterSpacing: 1.2, fontWeight: '800' }]}>
+          POPULAR SERVICES
+        </Text>
+
+        <View style={styles.popularServicesGrid}>
+          {/* Service 1: Back Pain */}
+          <TouchableOpacity
+            style={styles.serviceCard}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('Book')}
+          >
+            <View style={styles.serviceImageWrap}>
+              <Image
+                source={{ uri: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600&auto=format&fit=crop&q=80' }}
+                style={styles.servicePhoto}
+              />
+            </View>
+            <Text style={styles.serviceTitleText}>Back Pain</Text>
+            <Text style={styles.serviceSubText}>Relief from chronic or acute spine issues.</Text>
+          </TouchableOpacity>
+
+          {/* Service 2: Neck Pain */}
+          <TouchableOpacity
+            style={styles.serviceCard}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('Book')}
+          >
+            <View style={styles.serviceImageWrap}>
+              <Image
+                source={{ uri: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=600&auto=format&fit=crop&q=80' }}
+                style={styles.servicePhoto}
+              />
+            </View>
+            <Text style={styles.serviceTitleText}>Neck Pain</Text>
+            <Text style={styles.serviceSubText}>Correct posture and cervical discomfort.</Text>
+          </TouchableOpacity>
+
+          {/* Service 3: Sports Injury */}
+          <TouchableOpacity
+            style={styles.serviceCard}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('Book')}
+          >
+            <View style={styles.serviceImageWrap}>
+              <Image
+                source={{ uri: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=600&auto=format&fit=crop&q=80' }}
+                style={styles.servicePhoto}
+              />
+            </View>
+            <Text style={styles.serviceTitleText}>Sports Injury</Text>
+            <Text style={styles.serviceSubText}>Targeted recovery for athletes and active users.</Text>
+          </TouchableOpacity>
+
+          {/* Service 4: Post-Surgery */}
+          <TouchableOpacity
+            style={styles.serviceCard}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('Book')}
+          >
+            <View style={styles.serviceImageWrap}>
+              <Image
+                source={{ uri: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=600&auto=format&fit=crop&q=80' }}
+                style={styles.servicePhoto}
+              />
+            </View>
+            <Text style={styles.serviceTitleText}>Post-Surgery</Text>
+            <Text style={styles.serviceSubText}>Guided rehabilitation programs post-operation.</Text>
+          </TouchableOpacity>
+
+          {/* Service 5: Knee & Joint */}
+          <TouchableOpacity
+            style={styles.serviceCard}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('Book')}
+          >
+            <View style={styles.serviceImageWrap}>
+              <Image
+                source={{ uri: 'https://plus.unsplash.com/premium_photo-1664910605048-44c8450c0356?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }}
+                style={styles.servicePhoto}
+              />
+            </View>
+            <Text style={styles.serviceTitleText}>Knee & Joint</Text>
+            <Text style={styles.serviceSubText}>Ligament repair & joint mobility rehab.</Text>
+          </TouchableOpacity>
+
+          {/* Service 6: Home Visit */}
+          <TouchableOpacity
+            style={styles.serviceCard}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('Book')}
+          >
+            <View style={styles.serviceImageWrap}>
+              <Image
+                source={{ uri: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=600&auto=format&fit=crop&q=80' }}
+                style={styles.servicePhoto}
+              />
+            </View>
+            <Text style={styles.serviceTitleText}>Home Visit</Text>
+            <Text style={styles.serviceSubText}>Expert physio consultation at your home.</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* TODAY'S RECOVERY TIP BANNER */}
+        <View style={styles.tipCard}>
+          <View style={styles.tipHeaderRow}>
+            <View style={styles.tipIconCircle}>
+              <Ionicons name="bulb-outline" size={18} color="#0284c7" />
+            </View>
+            <Text style={styles.tipHeaderTitle}>Today's Recovery Tip</Text>
+          </View>
+          <Text style={styles.tipBodyText}>
+            Stretch for 5 minutes before starting today's exercises to improve flexibility and reduce muscle stiffness.
+          </Text>
+          <View style={styles.tipTag}>
+            <Text style={styles.tipTagText}>RECOMMENDED BY YOUR PHYSIOTHERAPIST</Text>
+          </View>
+        </View>
+
+        {/* UPCOMING ACTIVITY */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitle}>Upcoming Activity</Text>
+          <TouchableOpacity>
+            <Text style={styles.viewAllText}>View Schedule</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.activityList}>
+          <View style={styles.activityCard}>
+            <View style={styles.activityTimeCol}>
+              <Text style={styles.activityTimeText}>6:00 PM</Text>
+              <Text style={styles.activityDayText}>TODAY</Text>
+            </View>
+            <View style={styles.activityIconCircle}>
+              <Ionicons name="body-outline" size={18} color="#2563eb" />
+            </View>
+            <View style={styles.activityDetails}>
+              <Text style={styles.activityTitle}>Exercise Session</Text>
+              <Text style={styles.activitySub}>Core & Mobility Routine</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
+          </View>
+
+          <View style={styles.activityCard}>
+            <View style={styles.activityTimeCol}>
+              <Text style={styles.activityTimeText}>9:30 AM</Text>
+              <Text style={styles.activityDayText}>TOMORROW</Text>
+            </View>
+            <View style={[styles.activityIconCircle, { backgroundColor: '#f3e8ff' }]}>
+              <Ionicons name="calendar-outline" size={18} color="#9333ea" />
+            </View>
+            <View style={styles.activityDetails}>
+              <Text style={styles.activityTitle}>Follow-up Appointment</Text>
+              <Text style={styles.activitySub}>Dr. Sarah Johnson</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
+          </View>
+        </View>
+
+        {/* NEED ASSISTANCE FOOTER BANNER */}
+        <View style={styles.supportCard}>
+          <View style={styles.supportAvatarBox}>
+            <Ionicons name="headset-outline" size={24} color="#2563eb" />
+          </View>
+          <Text style={styles.supportTitle}>Need assistance?</Text>
+          <Text style={styles.supportSub}>
+            Our care team is here to help you with your recovery journey.
+          </Text>
+
+          <TouchableOpacity style={styles.supportBtn}>
+            <Text style={styles.supportBtnText}>Contact Support</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={{ marginTop: 8 }}>
+            <Text style={styles.faqLinkText}>Frequently Asked Questions</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 36,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 14,
+    marginBottom: 18,
+    paddingTop: 4,
+  },
+  userProfileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatarCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#0284c7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  avatarInitial: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  userInfo: {
+    justifyContent: 'center',
+  },
+  greetingText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  subGreetingText: {
+    fontSize: 12,
+    color: '#64748b',
+  },
+  notificationBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  notificationDot: {
+    position: 'absolute',
+    top: 9,
+    right: 9,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#ef4444',
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: 20,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#0f172a',
+  },
+  appointmentHeroCard: {
+    borderRadius: 24,
+    padding: 22,
+    marginBottom: 24,
+    shadowColor: '#002663',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  heroHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  heroCardBadgeLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: 'rgba(255, 255, 255, 0.65)',
+    letterSpacing: 0.8,
+  },
+  heroDateBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+  heroDateText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  heroTimeText: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#ffffff',
+    marginTop: 4,
+    marginBottom: 16,
+    letterSpacing: 0.5,
+  },
+  doctorInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  doctorIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(56, 189, 248, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    position: 'relative',
+  },
+  doctorCheckBadge: {
+    position: 'absolute',
+    bottom: -1,
+    right: -1,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#0ea5e9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#046582',
+  },
+  doctorNameText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  doctorSpecialtyText: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: 'rgba(255, 255, 255, 0.75)',
+    marginTop: 1,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    marginTop: 2,
+  },
+  locationText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.9)',
+  },
+  heroActionsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  heroBtnPrimary: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    height: 44,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  heroBtnPrimaryText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#003D9B',
+  },
+  heroBtnSecondary: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    height: 44,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroBtnSecondaryText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  sectionSubTitle: {
+    fontSize: 12,
+    color: '#64748b',
+  },
+  viewAllText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#003D9B',
+  },
+  recoveryCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  circleOuterGauge: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    borderWidth: 8,
+    borderColor: '#003D9B',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 18,
+  },
+  circleInnerGauge: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  circlePercentageText: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#0f172a',
+    letterSpacing: -0.5,
+  },
+  circleLabelText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#94a3b8',
+    letterSpacing: 1,
+    marginTop: 2,
+  },
+  recoveryScoreTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#0f172a',
+    textAlign: 'center',
+  },
+  scoreBold: {
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  trendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 6,
+    marginBottom: 16,
+  },
+  trendLabel: {
+    fontSize: 13,
+    color: '#64748b',
+    marginRight: 6,
+  },
+  trendBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e0f2fe',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  trendBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#003D9B',
+  },
+  weekBadgePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e8f2ff',
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginBottom: 16,
+  },
+  weekBadgePillText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#003D9B',
+  },
+  recoveryQuoteText: {
+    fontSize: 13,
+    color: '#64748b',
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  exerciseMetaText: {
+    fontSize: 12,
+    color: '#64748b',
+  },
+  progressBarTrack: {
+    height: 6,
+    backgroundColor: '#e2e8f0',
+    borderRadius: 3,
+    marginBottom: 14,
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#0284c7',
+    borderRadius: 3,
+  },
+  exerciseList: {
+    marginBottom: 14,
+  },
+  exerciseCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  exerciseCardCompleted: {
+    backgroundColor: '#f8fafc',
+    borderColor: '#cbd5e1',
+  },
+  exerciseIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  exerciseThumb: {
+    width: '100%',
+    height: '100%',
+  },
+  exerciseTextContent: {
+    flex: 1,
+  },
+  exerciseNameText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  exerciseSubText: {
+    fontSize: 12,
+    color: '#64748b',
+  },
+  completedTag: {
+    backgroundColor: '#dcfce7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  completedTagText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#15803d',
+  },
+  startSessionButton: {
+    backgroundColor: '#003D9B',
+    height: 48,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#003D9B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+    marginBottom: 24,
+  },
+  startSessionButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  quickGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  quickCard: {
+    width: '48%',
+    borderRadius: 24,
+    padding: 16,
+    marginBottom: 14,
+    justifyContent: 'space-between',
+    minHeight: 125,
+  },
+  quickCardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  quickTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0f172a',
+    marginBottom: 2,
+  },
+  quickDesc: {
+    fontSize: 12,
+    color: '#64748b',
+    lineHeight: 16,
+  },
+  doctorHorizontalList: {
+    paddingRight: 20,
+    gap: 14,
+    marginBottom: 24,
+  },
+  doctorCard: {
+    width: 220,
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  doctorImageWrap: {
+    width: '100%',
+    height: 155,
+    borderRadius: 20,
+    overflow: 'hidden',
+    position: 'relative',
+    marginBottom: 12,
+  },
+  doctorPhoto: {
+    width: '100%',
+    height: '100%',
+  },
+  ratingBadge: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 14,
+  },
+  ratingText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  availBadge: {
+    position: 'absolute',
+    bottom: 10,
+    left: 10,
+    backgroundColor: '#38bdf8',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+  },
+  availBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: 0.5,
+  },
+  docNameText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0f172a',
+    marginBottom: 2,
+  },
+  docSpecText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#64748b',
+    marginBottom: 4,
+  },
+  docExpText: {
+    fontSize: 12,
+    color: '#94a3b8',
+    marginBottom: 14,
+  },
+  docBookBtn: {
+    backgroundColor: '#003D9B',
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  docBookBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  tipCard: {
+    backgroundColor: '#f0f9ff',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#bae6fd',
+    marginBottom: 24,
+  },
+  tipHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  tipIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#e0f2fe',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  tipHeaderTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0369a1',
+  },
+  tipBodyText: {
+    fontSize: 12,
+    color: '#334155',
+    lineHeight: 18,
+    marginBottom: 10,
+  },
+  tipTag: {
+    backgroundColor: '#e0f2fe',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  tipTagText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#0284c7',
+    letterSpacing: 0.5,
+  },
+  activityList: {
+    gap: 10,
+    marginBottom: 24,
+  },
+  activityCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  activityTimeCol: {
+    width: 65,
+    marginRight: 10,
+  },
+  activityTimeText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  activityDayText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#94a3b8',
+  },
+  activityIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#dbeafe',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  activityDetails: {
+    flex: 1,
+  },
+  activityTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  activitySub: {
+    fontSize: 11,
+    color: '#64748b',
+  },
+  supportCard: {
+    backgroundColor: '#f0f9ff',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e0f2fe',
+  },
+  supportAvatarBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  supportTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: 4,
+  },
+  supportSub: {
+    fontSize: 12,
+    color: '#64748b',
+    textAlign: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 10,
+  },
+  supportBtn: {
+    backgroundColor: '#003D9B',
+    height: 44,
+    borderRadius: 12,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  supportBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  faqLinkText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#0284c7',
+    textDecorationLine: 'underline',
+  },
+  popularServicesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  serviceCard: {
+    width: '48%',
+    marginBottom: 20,
+  },
+  serviceImageWrap: {
+    width: '100%',
+    height: 145,
+    borderRadius: 24,
+    overflow: 'hidden',
+    marginBottom: 10,
+    backgroundColor: '#f1f5f9',
+  },
+  servicePhoto: {
+    width: '100%',
+    height: '100%',
+  },
+  serviceTitleText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0f172a',
+    marginBottom: 3,
+  },
+  serviceSubText: {
+    fontSize: 12,
+    color: '#64748b',
+    lineHeight: 16,
+  },
+});

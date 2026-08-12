@@ -1,0 +1,592 @@
+SOFTWARE REQUIREMENTS SPECIFICATION
+One Medical — Physiotherapy Recovery Platform
+Patient Mobile App  •  Marketing Website  •  Admin/Therapist Web Console  •  Microservices Backend
+MERN Stack + React Native  |  Microservices Architecture (API Gateway + 4 Services)
+Version 1.0
+Confidential — Internal Engineering Document
+Table of Contents
+1. Introduction
+2. Overall Description
+3. System Architecture (Microservices)
+4. Technology Stack
+5. Functional Requirements
+6. Data Model (Per-Service Schemas)
+7. API Design & Gateway Routing
+8. Critical Flow Specifications
+9. Non-Functional Requirements
+10. Security Requirements
+11. Edge Cases & Error Handling
+12. Third-Party Integrations
+13. Deployment & DevOps
+14. Testing Strategy
+15. Appendix
+1. Introduction
+1.1 Purpose
+This document specifies the functional and non-functional requirements for the One Medical platform — a physiotherapy and rehabilitation recovery ecosystem consisting of a patient-facing mobile application, a public marketing website, and an admin/therapist web console, backed by a microservices backend. It is intended for backend engineers, mobile/web developers, QA, and DevOps to build a production-grade system without ambiguity.
+1.2 Scope
+The system enables patients to discover physiotherapists, book appointments, follow assigned recovery programs with guided exercises, track recovery progress, manage medical records, and pay for consultations. Clinic staff (therapists/admins) manage patients, appointments, recovery programs, exercise libraries, payments/invoicing, and view analytics/reports. The marketing website serves as the top-of-funnel acquisition channel that feeds into the same booking pipeline.
+1.3 Definitions, Acronyms, Abbreviations
+Term
+Definition
+SRS
+Software Requirements Specification
+JWT
+JSON Web Token — used for stateless authentication
+RBAC
+Role-Based Access Control
+BFF
+Backend-for-Frontend
+OTP
+One-Time Password used for phone/email verification
+PII
+Personally Identifiable Information
+PHI
+Protected Health Information (medical records, reports, conditions)
+SLA
+Service Level Agreement
+p95
+95th percentile latency
+Idempotency Key
+Unique client-generated key preventing duplicate processing of a request (e.g. payments)
+1.4 References
+OWASP Top 10 (2021) — Web Application Security Risks
+RFC 6749 — OAuth 2.0 Framework (refresh token design reference)
+RFC 7519 — JSON Web Token (JWT)
+MongoDB Multi-Document ACID Transactions documentation
+Razorpay / Stripe Webhooks & Payments API documentation
+1.5 Document Overview
+Section 2 describes the product at a high level. Section 3–4 define the architecture and stack. Section 5 lists functional requirements per module (mapped to the actual app/dashboard screens). Sections 6–8 define data models, APIs and critical flows. Sections 9–14 cover non-functional requirements, security, edge cases, integrations, DevOps and testing.
+2. Overall Description
+2.1 Product Perspective
+One Medical is a new, self-contained product composed of three client applications sharing one backend platform:
+Patient Mobile App — React Native (iOS + Android), consumed by patients.
+Admin/Therapist Web Console — React.js SPA, used by clinic admins, receptionists, and therapists.
+Marketing Website — React.js (SSR/SSG via Next.js) for SEO, public and unauthenticated.
+All three clients talk to a single API Gateway, which routes requests to independent backend microservices. Each service owns its own MongoDB database (database-per-service pattern) — no service reaches into another service's database directly.
+2.2 Product Functions (Summary)
+Patient & staff authentication with OTP verification and role-based access.
+Therapist discovery, appointment booking, rescheduling and cancellation with real-time slot availability.
+Recovery program authoring, assignment, exercise tracking and progress scoring.
+Medical record and report storage (scans, MRI, clinical notes).
+Payments, invoicing, refunds, and therapist payouts.
+Notifications (push, SMS, email) for appointments, reminders, and recovery milestones.
+Admin analytics: patient, therapist, revenue and recovery-outcome reporting.
+2.3 User Classes and Characteristics
+Role
+Description
+Primary Client
+Patient
+End user seeking physiotherapy care; books appointments, follows programs.
+Mobile App
+Therapist
+Licensed physiotherapist; manages own schedule, patients, and programs.
+Web Console
+Clinic Admin
+Front-desk/ops staff; manages patients, therapists, appointments, billing.
+Web Console
+Super Admin
+Platform owner; manages clinics, global settings, analytics, access.
+Web Console
+Anonymous Visitor
+Unauthenticated visitor browsing the marketing site.
+Website
+2.4 Operating Environment
+Mobile: iOS 14+ and Android 9+ (React Native 0.74+).
+Web: Evergreen browsers — Chrome, Safari, Edge, Firefox (last 2 versions).
+Backend: Containerized Node.js 20 LTS services on Linux, orchestrated via Kubernetes/ECS.
+Database: MongoDB Atlas (managed, replica-set backed) per service.
+2.5 Design and Implementation Constraints
+Must use MERN (MongoDB, Express/Node, React) + React Native as mandated stack.
+Must follow microservices architecture: one API Gateway + 4 domain services (no shared database).
+All PHI/PII must be encrypted at rest (AES-256) and in transit (TLS 1.2+).
+All monetary values stored in the smallest currency unit (paise/cents) as integers to avoid floating-point errors; base currency INR (₹).
+2.6 Assumptions and Dependencies
+Third-party SMS/OTP provider (e.g. MSG91/Twilio) and payment gateway (Razorpay) accounts are provisioned.
+Cloud object storage (AWS S3) is available for medical files and exercise media.
+Therapists are pre-verified/onboarded by a Clinic Admin before receiving bookings.
+3. System Architecture (Microservices)
+3.1 Architecture Style
+The backend follows a microservices architecture with one API Gateway and four independently deployable domain services, each owning its own MongoDB database. Services communicate synchronously via REST (through the gateway or direct service-to-service calls for internal reads) and asynchronously via an event bus (RabbitMQ) for cross-domain side effects such as notifications, so that no service is blocked waiting on another.
+3.2 Service Breakdown
+3.2.1 API Gateway
+Single entry point for all three clients. Responsibilities:
+Request routing to the correct downstream microservice by path prefix.
+JWT verification and RBAC enforcement before forwarding requests.
+Rate limiting (per-IP and per-user) and request throttling.
+Response aggregation for composite views (e.g. patient home screen needs data from Scheduling + Clinical services).
+Centralized request logging, correlation IDs, and API versioning (/api/v1/...).
+CORS policy enforcement and TLS termination.
+3.2.2 Identity & User Service
+Owns authentication and all user identity data for patients, therapists, and staff.
+Registration, login, OTP generation/verification, password reset.
+JWT access/refresh token issuance and rotation.
+Role and permission management (RBAC).
+Patient profile, medical intake, and therapist profile (specialization, qualifications, availability template) management.
+Owns database: identity_db
+3.2.3 Scheduling & Appointment Service
+Owns therapist availability and the full appointment lifecycle.
+Availability slot generation from therapist templates + exceptions (leave, holidays).
+Appointment booking with atomic slot-locking to prevent double booking.
+Reschedule, cancellation, no-show and completion state transitions.
+Publishes appointment.created / appointment.cancelled / appointment.completed events.
+Owns database: scheduling_db
+3.2.4 Clinical & Recovery Service
+Owns clinical content and patient recovery data.
+Exercise library (CRUD), recovery program authoring and assignment.
+Session logging, recovery score computation, milestone tracking.
+Medical records/reports metadata (files stored in S3; service stores references).
+Owns database: clinical_db
+3.2.5 Payment & Billing Service
+Owns all monetary transactions.
+Payment intent creation, gateway webhook handling, invoice generation.
+Refunds and therapist payout computation.
+Publishes payment.succeeded / payment.failed / refund.issued events.
+Owns database: payments_db
+3.2.6 Asynchronous Notification Worker (shared infrastructure, not a REST-facing service)
+A lightweight consumer subscribed to RabbitMQ topics published by the four services. It sends push (FCM), SMS, and email notifications. It is not counted as a fifth REST microservice — it has no public API and exists purely to decouple notification delivery from the request/response cycle.
+3.3 Inter-Service Communication
+Client → Gateway → Service: synchronous REST/JSON over HTTPS for all user-initiated actions.
+Service → Service (synchronous): only for read-only lookups the gateway cannot aggregate cheaply (e.g. Scheduling Service validates therapistId exists by calling Identity Service's internal /internal/therapists/:id endpoint, protected by a service-to-service API key, never exposed publicly).
+Service → Broker → Worker (asynchronous): RabbitMQ topic exchange for events (appointment confirmed, payment succeeded, recovery milestone hit) — decouples notification delivery and analytics indexing from the originating request.
+No service ever queries another service's database directly — this is enforced architecturally by giving each service its own MongoDB connection string and network policy.
+3.4 High-Level Architecture Diagram (described)
+[Patient App / Web Console / Website] → HTTPS → [API Gateway (auth, routing, rate-limit)] → [Identity Service | Scheduling Service | Clinical Service | Payment Service] each with its own MongoDB → services publish domain events → [RabbitMQ] → [Notification Worker] → FCM / SMS / Email. Shared Redis cluster used for caching, rate-limit counters and distributed locks (slot booking).
+4. Technology Stack
+Layer
+Technology
+Mobile App
+React Native (TypeScript), React Navigation, Redux Toolkit + RTK Query, React Native Firebase (push), AsyncStorage/MMKV for local cache, React Hook Form + Zod
+Admin/Therapist Web Console
+React.js (TypeScript, Vite), Redux Toolkit + RTK Query, TailwindCSS, React Router, React Hook Form + Zod, Recharts for analytics
+Marketing Website
+Next.js (React, SSR/SSG for SEO), TailwindCSS
+API Gateway
+Node.js + Express.js, http-proxy-middleware, express-rate-limit, helmet, jsonwebtoken
+Microservices
+Node.js 20 LTS + Express.js (TypeScript), Mongoose ODM
+Database
+MongoDB Atlas — one cluster/database per service (database-per-service pattern)
+Cache / Locks / Rate-limit
+Redis (ioredis client) — session cache, distributed slot-booking locks, rate-limit counters
+Message Broker
+RabbitMQ (topic exchange) for domain events → notification worker
+Auth
+JWT (short-lived access token 15 min + rotating refresh token 30 days), bcrypt (12 rounds) for password hashing
+File Storage
+AWS S3 (medical reports, scans, exercise videos/images) with pre-signed URLs
+Payment Gateway
+Razorpay (India) — Orders API + Webhooks; Stripe as pluggable alternative for international
+SMS / OTP
+MSG91 or Twilio Verify API
+Push Notifications
+Firebase Cloud Messaging (FCM)
+Email
+SendGrid (transactional templates)
+Containerization
+Docker; docker-compose for local dev, Kubernetes (EKS) or AWS ECS Fargate for production
+CI/CD
+GitHub Actions — lint/test/build → Docker image → push to ECR → rolling deploy
+Monitoring/Logging
+Prometheus + Grafana (metrics), ELK Stack or AWS CloudWatch Logs (centralized logs), Sentry (error tracking)
+API Documentation
+OpenAPI 3.0 / Swagger per service, aggregated at the gateway
+5. Functional Requirements
+Each module below lists functional requirements (FR-x.y), primary actors, and key business rules. IDs are stable references for traceability to test cases.
+5.1 Authentication & User Management (Identity Service)
+ID
+Requirement
+FR-1.1
+System shall allow registration via mobile number with OTP verification (6-digit OTP, 5-minute expiry, max 5 verification attempts before lockout of 15 minutes).
+FR-1.2
+System shall support login via mobile+OTP for patients and email+password for staff/therapists/admins.
+FR-1.3
+System shall issue a JWT access token (15 min TTL) and refresh token (30 days TTL, single-use with rotation) on successful auth.
+FR-1.4
+System shall enforce RBAC: every endpoint declares required role(s); gateway rejects mismatched roles with 403.
+FR-1.5
+System shall allow patients to complete/edit their profile: personal info, medical conditions, allergies, emergency contact, consultation preferences.
+FR-1.6
+System shall allow therapists to manage their profile: specialization, qualifications, languages, clinic location, consultation fee, working hours.
+FR-1.7
+System shall support password reset via OTP (staff) with a time-boxed reset token (15 min TTL, single use).
+FR-1.8
+System shall support account deletion requests; PII is anonymized after a 30-day grace period, medical records retained per regulatory retention policy unless the patient explicitly consents to erasure.
+FR-1.9
+System shall allow a user to change their registered mobile number, requiring OTP verification of the new number before the change is committed.
+5.2 Appointment & Scheduling (Scheduling Service)
+ID
+Requirement
+FR-2.1
+System shall let patients search/filter therapists by specialization, language, clinic location and next available slot.
+FR-2.2
+System shall display real-time slot availability computed from the therapist's recurring availability template minus already-booked slots and leave exceptions.
+FR-2.3
+System shall book a slot only after acquiring a distributed lock (Redis) on {therapistId, date, startTime} to prevent double-booking under concurrent requests; the lock is released on success/failure/timeout (5s).
+FR-2.4
+System shall hold a slot in 'pending-payment' state for 10 minutes after selection; if payment is not confirmed within that window, the slot is released automatically.
+FR-2.5
+System shall allow patients to reschedule an appointment up to 2 hours before the scheduled time; later requests require therapist/admin approval.
+FR-2.6
+System shall allow patients/therapists to cancel an appointment; cancellations within 4 hours of start time apply the clinic's cancellation fee policy.
+FR-2.7
+System shall allow therapists to mark an appointment as completed and add a session summary.
+FR-2.8
+System shall auto-mark an appointment as 'no-show' if not started within 15 minutes of the scheduled time and not manually updated.
+FR-2.9
+System shall allow clinic admins to create/edit appointments on behalf of a patient (walk-in/phone bookings).
+5.3 Recovery Program & Exercise Management (Clinical Service)
+ID
+Requirement
+FR-3.1
+System shall allow therapists to create reusable exercises in an exercise library (name, instructions, target body part, difficulty, media).
+FR-3.2
+System shall allow therapists to author a recovery program composed of exercises scheduled across days/weeks, with sets/reps/duration per exercise.
+FR-3.3
+System shall allow therapists to assign a program to a specific patient, optionally customizing sets/reps for that patient.
+FR-3.4
+System shall let patients view today's session, mark exercises complete, and log pain level (0–10 scale) per session.
+FR-3.5
+System shall compute a recovery score per patient-program using a weighted formula: adherence (% sessions completed on schedule) × 0.5 + pain-trend improvement × 0.3 + therapist-marked milestone completion × 0.2, recalculated after each logged session.
+FR-3.6
+System shall allow therapists to upload/patients to view medical reports and scans (PDF/JPEG/PNG/DICOM up to 25 MB), stored in S3 with pre-signed, time-limited (15 min) download URLs.
+FR-3.7
+System shall notify a therapist when a patient's logged pain level exceeds a configurable clinical threshold (e.g. ≥7) for 2 consecutive sessions.
+5.4 Payments & Billing (Payment Service)
+ID
+Requirement
+FR-4.1
+System shall create a payment order via the gateway (Razorpay Orders API) when a patient confirms a booking, tagged with an idempotency key equal to the appointment's hold ID to prevent duplicate charges on retry.
+FR-4.2
+System shall verify payment authenticity via gateway webhook signature verification before marking a transaction as successful — client-side confirmation alone is never trusted.
+FR-4.3
+System shall generate an invoice (PDF) automatically on successful payment and make it downloadable from the patient's account.
+FR-4.4
+System shall support full and partial refunds, tracked against the original transaction, and reflect the refund status back to the appointment record.
+FR-4.5
+System shall compute therapist payouts on a configurable cycle (e.g. weekly) as (completed appointment fees − platform commission), exportable by admins.
+FR-4.6
+System shall record every payment state transition (created → authorized → captured → refunded/failed) with timestamps for audit.
+5.5 Notifications
+ID
+Requirement
+FR-5.1
+System shall send a push + SMS notification 24 hours and 1 hour before a scheduled appointment.
+FR-5.2
+System shall notify patients on booking confirmation, reschedule, cancellation, and payment receipt.
+FR-5.3
+System shall notify therapists of new bookings, cancellations, and clinical alert thresholds (FR-3.7).
+FR-5.4
+System shall let users configure notification channel preferences (push/SMS/email) per category in settings.
+5.6 Admin/Therapist Web Console
+ID
+Requirement
+FR-6.1
+System shall provide a dashboard with counts/trends for patients, appointments, revenue and average recovery score.
+FR-6.2
+System shall provide CRUD screens for patients and therapists with searchable, paginated, filterable lists.
+FR-6.3
+System shall provide appointment management: list, create (on behalf of patient), reschedule, cancel, session summary entry.
+FR-6.4
+System shall provide program/exercise authoring screens as described in 5.3.
+FR-6.5
+System shall provide report screens: patient reports, treatment reports, financial reports, exportable as CSV/PDF.
+FR-6.6
+System shall provide analytics screens: patient analytics, therapist utilization, recovery-outcome trends, revenue analytics — all filterable by date range.
+FR-6.7
+System shall provide a payments screen listing transactions, invoices, refunds and payout batches with status filters.
+FR-6.8
+System shall restrict Super Admin-only actions (clinic settings, global user role changes) from Clinic Admin and Therapist roles.
+5.7 Patient Mobile App
+ID
+Requirement
+FR-7.1
+App shall provide onboarding: welcome, login/OTP, profile completion, push-permission opt-in.
+FR-7.2
+App shall provide a home/recovery dashboard: recovery score, today's exercise, quick actions, recommended therapists, upcoming activity.
+FR-7.3
+App shall provide the full booking flow described in FR-2.1–FR-2.4 plus Payment (FR-4.1).
+FR-7.4
+App shall provide recovery-program screens: program overview, today's session, exercise detail with media, session-complete summary, recovery-progress chart.
+FR-7.5
+App shall provide account screens: profile, medical info, medical reports, payments/invoices, saved specialists, notification preferences, privacy/security, help & support, delete account.
+FR-7.6
+App shall function in a degraded offline mode for the 'today's session' screen — exercises already downloaded remain viewable, and completion logs queue locally and sync when connectivity returns.
+5.8 Marketing Website
+ID
+Requirement
+FR-8.1
+Website shall present hero, services, team, testimonials, FAQ, and a consultation-booking form that creates a lead record and, on submission, deep-links into the same booking flow as the app (web booking widget).
+FR-8.2
+Website shall be server-rendered/statically generated for SEO and shall achieve a Lighthouse performance score ≥ 90 on mobile.
+6. Data Model (Per-Service Schemas)
+Each service owns an independent MongoDB database. Schemas below show core fields; all documents additionally carry createdAt/updatedAt timestamps and a soft-delete flag (isDeleted) unless noted.
+6.1 Identity Service — identity_db
+users
+_id, role (enum: patient|therapist|clinic_admin|super_admin), name, email, phoneNumber (unique, indexed), passwordHash (staff only), otp: { codeHash, expiresAt, attempts }, isPhoneVerified, isActive, refreshTokenVersions: [ { jti, expiresAt } ], lastLoginAt
+patient_profiles
+_id, userId (ref users, unique, indexed), dob, gender, medicalConditions: [String], allergies: [String], emergencyContact: { name, phone, relation }, address
+therapist_profiles
+_id, userId (ref users, unique, indexed), specializations: [String], qualifications: [String], experienceYears, languages: [String], clinicLocation: { address, lat, lng }, consultationFee, availabilityTemplate: [ { dayOfWeek, startTime, endTime, slotDurationMin } ], leaveExceptions: [ { date, reason } ], ratingAvg, ratingCount
+6.2 Scheduling Service — scheduling_db
+appointments
+_id, patientId, therapistId, serviceType, date, startTime, endTime, status (enum: pending_payment|confirmed|completed|cancelled|no_show), cancelReason, paymentTxnId, sessionSummary, createdBy (self|admin), createdAt — compound index on { therapistId, date, startTime } unique when status != cancelled
+availability_locks (Redis, not Mongo)
+Key: lock:{therapistId}:{date}:{startTime} → value: requestId, TTL 5s — used to serialize concurrent booking attempts for the same slot.
+6.3 Clinical Service — clinical_db
+exercises
+_id, name, description, bodyPart, difficulty (enum: beginner|intermediate|advanced), mediaUrl, instructions: [String], mistakesToAvoid: [String], createdBy
+programs
+_id, title, description, targetCondition, durationWeeks, createdBy (therapistId), exercises: [ { exerciseId, dayOfWeek, sets, reps, durationSec } ]
+patient_programs
+_id, patientId, programId, assignedBy, startDate, status (enum: active|completed|paused), recoveryScore, milestones: [ { title, targetDate, achieved } ]
+session_logs
+_id, patientId, patientProgramId, date, exercisesCompleted: [ { exerciseId, setsDone, repsDone } ], painLevel (0–10), notes — indexed on { patientId, date }
+medical_records
+_id, patientId, type (enum: report|scan|note), fileKey (S3 object key), uploadedBy, uploadedAt, sizeBytes, mimeType
+6.4 Payment Service — payments_db
+transactions
+_id, appointmentId, patientId, amountPaise, currency, gateway, gatewayOrderId, gatewayPaymentId, idempotencyKey (unique, indexed), status (enum: created|authorized|captured|failed|refunded|partially_refunded), method, createdAt
+invoices
+_id, transactionId, invoiceNumber (sequential, unique), breakdown: { subtotal, tax, discount, total }, pdfKey (S3), generatedAt
+refunds
+_id, transactionId, amountPaise, reason, status (enum: initiated|processed|failed), gatewayRefundId
+payouts
+_id, therapistId, periodStart, periodEnd, grossAmountPaise, commissionPaise, netAmountPaise, status (enum: pending|processed), processedAt
+7. API Design & Gateway Routing
+All endpoints are versioned under /api/v1. The gateway strips no auth for public routes (marked Public below); all other routes require a valid JWT and the listed role(s).
+7.1 Gateway Routing Table
+Path Prefix
+Routed Service
+/api/v1/auth/*
+Identity Service
+/api/v1/users/*, /api/v1/patients/*, /api/v1/therapists/*
+Identity Service
+/api/v1/appointments/*, /api/v1/availability/*
+Scheduling Service
+/api/v1/programs/*, /api/v1/exercises/*, /api/v1/sessions/*, /api/v1/medical-records/*
+Clinical Service
+/api/v1/payments/*, /api/v1/invoices/*, /api/v1/refunds/*, /api/v1/payouts/*
+Payment Service
+7.2 Representative Endpoints
+Method & Path
+Auth
+Description
+POST /api/v1/auth/otp/request
+Public
+Request OTP for a phone number; rate-limited to 3 requests/10 min/number
+POST /api/v1/auth/otp/verify
+Public
+Verify OTP; returns access + refresh token pair on success
+POST /api/v1/auth/refresh
+Refresh token
+Rotates refresh token, returns new access token
+POST /api/v1/auth/logout
+Auth
+Revokes the current refresh token
+GET /api/v1/therapists?specialization=&lat=&lng=&date=
+Public
+Search therapists with next-available-slot enrichment
+GET /api/v1/availability/:therapistId?date=
+Auth
+Returns free slots for a given day
+POST /api/v1/appointments
+Patient/Admin
+Creates appointment in pending_payment state; acquires slot lock
+PATCH /api/v1/appointments/:id/reschedule
+Patient/Therapist/Admin
+Reschedules; validates 2-hour cutoff rule
+PATCH /api/v1/appointments/:id/cancel
+Patient/Therapist/Admin
+Cancels; applies cancellation-fee policy if within 4-hour window
+POST /api/v1/payments/orders
+Patient
+Creates a gateway payment order for an appointment; idempotent
+POST /api/v1/payments/webhook
+Gateway signature
+Receives Razorpay/Stripe webhook; verifies signature before processing
+GET /api/v1/patients/:id/medical-records
+Patient(self)/Therapist/Admin
+Lists medical records with pre-signed download URLs
+POST /api/v1/programs/:id/assign
+Therapist
+Assigns a program to a patient
+POST /api/v1/sessions
+Patient
+Logs a completed exercise session and pain level
+GET /api/v1/analytics/revenue?from=&to=
+Admin
+Aggregated revenue analytics for a date range
+7.3 Standard Response Envelope
+Success: { success: true, data: <payload>, meta?: { page, limit, total } }
+Error: { success: false, error: { code: "SLOT_ALREADY_BOOKED", message: "...", details?: {...} } } — error codes are stable, machine-readable strings consumed by both mobile and web clients for localized messaging.
+8. Critical Flow Specifications
+8.1 Appointment Booking Flow
+Patient searches therapists (Gateway → Scheduling Service enriches Identity Service therapist list with next-available slot).
+Patient selects therapist, date and time slot.
+Scheduling Service acquires a Redis lock for {therapistId, date, startTime}; on success creates appointment in 'pending_payment' with a 10-minute expiry (TTL index in MongoDB).
+Gateway calls Payment Service to create a gateway order tagged with the appointment ID as idempotency key.
+Client completes payment via gateway SDK; gateway sends an async webhook to Payment Service.
+Payment Service verifies the webhook signature, marks the transaction 'captured', publishes payment.succeeded event.
+Scheduling Service (subscribed to payment.succeeded) transitions the appointment to 'confirmed' and releases the slot lock.
+Notification Worker (subscribed to appointment confirmed) sends push/SMS/email confirmations to patient and therapist.
+If payment is not completed within 10 minutes, a scheduled job expires the appointment back to 'cancelled' and the slot becomes bookable again.
+8.2 Recovery Session Logging Flow
+Patient opens 'Today's Session' — mobile app fetches the patient's active program's exercises scheduled for the current day from Clinical Service (cached locally for offline access).
+Patient marks exercises complete and enters pain level (0–10).
+On submit, app POSTs a session_log; if offline, the request is queued in local storage and retried on reconnect (idempotent via a client-generated sessionLogId).
+Clinical Service recalculates the recoveryScore using the weighted formula (FR-3.5) and updates patient_programs.
+If painLevel ≥ threshold for 2 consecutive sessions, Clinical Service publishes a clinical.alert event consumed by the Notification Worker to alert the assigned therapist.
+8.3 Payment Webhook Reliability
+Webhook endpoint verifies the gateway's HMAC signature before trusting the payload.
+Webhook processing is idempotent keyed by gatewayPaymentId — replayed webhooks (gateway retries) are safely ignored if already processed.
+If Payment Service is down when a webhook arrives, the gateway's own retry-with-backoff (typically up to 24h) covers delivery; a reconciliation job also polls the gateway's Orders API hourly for any order stuck in 'created' > 15 minutes to catch missed webhooks.
+9. Non-Functional Requirements
+Category
+Requirement
+Performance
+API p95 latency < 300 ms for reads, < 600 ms for writes involving payment/slot-lock, under 500 concurrent users per service instance.
+Scalability
+All services are stateless (session state in JWT/Redis) and horizontally scalable behind the gateway/load balancer; MongoDB scaled via replica sets and, if needed, sharding on high-write collections (appointments, session_logs).
+Availability
+Target 99.9% uptime for the gateway and all four services; health-check endpoints (/healthz) on every service for orchestrator liveness/readiness probes.
+Reliability
+At-least-once event delivery via RabbitMQ with consumer acknowledgements and dead-letter queues for failed notification deliveries.
+Resilience
+Circuit breaker (e.g. opossum) on synchronous service-to-service calls; gateway falls back to cached/last-known data where safe (e.g. therapist profile) rather than failing the whole request.
+Usability
+Mobile booking flow completable in ≤ 5 taps from Home to payment; web console screens paginate lists > 25 rows.
+Data Privacy
+PHI/PII encrypted at rest (MongoDB field-level or volume encryption) and in transit (TLS 1.2+); access to medical_records logged with an audit trail (who accessed which record, when).
+Maintainability
+Each service has independent CI/CD, versioned OpenAPI spec, and >80% unit test coverage on business logic (booking rules, recovery-score calculation, payment state machine).
+Observability
+Structured JSON logs with correlation ID propagated from the gateway through all downstream calls; metrics exported to Prometheus; error tracking via Sentry.
+10. Security Requirements
+Passwords hashed with bcrypt (cost factor 12); OTPs stored as salted hashes, never plaintext.
+JWT access tokens short-lived (15 min); refresh tokens rotated on every use and revocable (stored as a jti list per user for logout-everywhere support).
+All inputs validated at the gateway and again at the service layer (Zod/Joi schemas) — defense in depth against malformed/malicious payloads.
+Rate limiting: OTP requests (3/10 min/number), login attempts (5/15 min/account, then temporary lockout), general API (100 req/min/IP at the gateway).
+RBAC enforced centrally at the gateway using the role claim in the JWT; services additionally re-check ownership (e.g. a patient can only fetch their own medical records) to prevent IDOR (Insecure Direct Object Reference) vulnerabilities.
+File uploads restricted by MIME type and size (25 MB), scanned for malware before being persisted to S3, and served only via short-lived pre-signed URLs — never public S3 URLs.
+Payment webhook endpoints verify gateway signatures; all other webhook/internal endpoints protected by a service-to-service API key not exposed to any client.
+Full audit log (append-only collection) for medical-record access, role changes, refunds and account deletions.
+OWASP Top 10 mitigations: parameterized queries via Mongoose (no raw query injection), Helmet.js security headers, CSRF protection on cookie-based web sessions, dependency vulnerability scanning (npm audit / Snyk) in CI.
+11. Edge Cases & Error Handling
+Scenario
+System Behavior
+Two patients try to book the same slot simultaneously
+Redis distributed lock ensures only the first request proceeds; the second receives 409 SLOT_ALREADY_LOCKED and is shown refreshed availability.
+Patient closes app mid-payment
+Appointment remains 'pending_payment' with a 10-minute TTL; a background job auto-cancels and releases the slot if payment never completes.
+Payment succeeds at the gateway but the confirmation webhook is delayed/lost
+Hourly reconciliation job polls the gateway for orders stuck 'created' beyond 15 minutes and corrects local state; patient sees 'confirming' status in-app in the interim, not a false failure.
+OTP entered incorrectly 5 times
+Account is temporarily locked from OTP verification for 15 minutes; user is shown a clear cooldown message, not a generic error.
+Refresh token reused after rotation (token theft indicator)
+All refresh tokens for that user are revoked immediately and the user is forced to re-authenticate on all devices.
+Therapist cancels an already-confirmed, paid appointment
+System auto-initiates a full refund, notifies the patient, and surfaces the freed slot back into availability.
+Patient attempts to access another patient's medical record via a guessed ID
+Service-level ownership check returns 403 FORBIDDEN regardless of a valid JWT — never relies on the client not guessing IDs.
+Mobile app goes offline mid-exercise-session logging
+Log is queued locally with a client-generated idempotency key and retried on reconnect; duplicate submits are ignored server-side.
+Large medical file upload exceeds size/type limits
+Rejected client-side pre-upload and re-validated server-side with a specific FILE_TOO_LARGE / UNSUPPORTED_TYPE error code.
+Therapist double-books themselves across two devices/tabs
+Same Redis lock mechanism used for patient bookings applies uniformly to admin/therapist-initiated bookings.
+Appointment time crosses a timezone boundary (traveling patient)
+All appointment times stored in UTC with the clinic's IANA timezone attached; clients render in the viewer's local timezone but booking cutoffs are evaluated in the clinic's timezone.
+Refund requested after the payment gateway's refund window closes
+System flags the transaction for manual reconciliation by an admin rather than silently failing.
+Patient deletes their account with active/upcoming paid appointments
+Deletion is blocked with a clear message until upcoming appointments are cancelled/completed and any pending payouts settled.
+Duplicate webhook delivery from the payment gateway
+Idempotency on gatewayPaymentId ensures the second delivery is a no-op, returning 200 without reprocessing.
+Therapist availability template changes after slots are already booked
+Existing confirmed bookings are honored; only future unbooked slots are recalculated against the new template.
+Session token expires mid-form-submission (web console)
+Gateway returns 401 TOKEN_EXPIRED; client silently attempts a refresh-token exchange once and retries the original request before surfacing a login prompt.
+12. Third-Party Integrations
+Integration
+Purpose
+Notes
+Razorpay (Orders + Webhooks API)
+Payment processing for appointments
+Signature-verified webhooks; supports UPI, cards, netbanking for the Indian market
+MSG91 / Twilio Verify
+OTP delivery via SMS
+Fallback provider configured for delivery-failure retries
+Firebase Cloud Messaging
+Push notifications to iOS/Android
+Device tokens stored per user, invalidated on 401 responses from FCM
+SendGrid
+Transactional email (receipts, password reset)
+Templated emails with dynamic data
+AWS S3
+Storage for medical reports, scans, exercise media
+Server-side encryption (SSE-S3), lifecycle rules to archive old records to Glacier
+13. Deployment & DevOps
+Each service and the gateway is packaged as an independent Docker image with a multi-stage build (smaller production image, no dev dependencies).
+Local development: docker-compose spins up gateway + 4 services + MongoDB + Redis + RabbitMQ with hot-reload.
+Production: Kubernetes (or ECS Fargate) with one Deployment per service, HorizontalPodAutoscaler based on CPU/latency, and a managed load balancer in front of the gateway.
+CI/CD (GitHub Actions): on PR — lint, type-check, unit tests; on merge to main — build image, push to registry, run integration tests against a staging environment, then manual-approval gated production rollout (rolling update, zero downtime).
+Secrets (DB URIs, JWT signing keys, gateway API keys) managed via AWS Secrets Manager / Kubernetes Secrets — never committed to source control.
+Each service exposes /healthz (liveness) and /readyz (readiness, checks DB/Redis connectivity) for orchestrator probes.
+Database backups: automated daily MongoDB Atlas snapshots with 30-day retention; point-in-time recovery enabled for payments_db.
+14. Testing Strategy
+Level
+Approach
+Unit
+Jest for business logic per service — booking rules, recovery-score formula, payment state machine, RBAC middleware — target >80% coverage on core logic.
+Integration
+Supertest against a running service instance with an in-memory/test MongoDB (mongodb-memory-server) and a test RabbitMQ vhost.
+Contract
+OpenAPI schema validation ensures gateway and service contracts stay in sync; consumer-driven contract tests (Pact) between mobile/web clients and the gateway for critical endpoints.
+End-to-End
+Detox (React Native) for the mobile booking/recovery flows; Playwright for the admin web console and marketing site.
+Load Testing
+k6 scripted load tests targeting the booking flow (slot-lock contention) and payment webhook throughput before major releases.
+Security Testing
+OWASP ZAP automated scan in CI; annual third-party penetration test given the platform handles PHI.
+15. Appendix
+15.1 Screen-to-Service Traceability (sample)
+Screen
+Client
+Primary Service(s)
+Login / OTP / Profile Setup
+Mobile + Web
+Identity Service
+Home / Recovery Dashboard
+Mobile
+Clinical Service + Scheduling Service (aggregated by Gateway)
+Book Appointment / Choose Therapist / Payment
+Mobile
+Scheduling Service + Payment Service
+Recovery Program / Today's Session / Exercise Detail
+Mobile
+Clinical Service
+Medical Reports / MRI Details
+Mobile
+Clinical Service (metadata) + S3 (files)
+Payments & Invoices
+Mobile
+Payment Service
+Patients / Therapists Management
+Web Console
+Identity Service
+Appointments / Create Appointment / Reschedule
+Web Console
+Scheduling Service
+Programs / Exercise Library
+Web Console
+Clinical Service
+Reports / Analytics
+Web Console
+Aggregated read models across all 4 services
+Payments / Invoices / Payouts
+Web Console
+Payment Service
+15.2 Open Items for Stakeholder Sign-off
+Exact cancellation-fee percentage/policy tiers.
+Data retention period for medical records post account-deletion, per applicable regional health-data regulation.
+Multi-clinic / multi-tenant support scope for Super Admin (single clinic vs. clinic chain).

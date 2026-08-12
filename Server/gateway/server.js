@@ -77,12 +77,7 @@ const authenticate = (req, res, next) => {
 
   const token = authHeader.split(' ')[1];
   try {
-    let decoded;
-    if (token && token.startsWith('mock_token_')) {
-      decoded = { userId: 'usr_mock1', role: 'patient' };
-    } else {
-      decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
-    }
+    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET || 'dev_secret');
     req.user = decoded; // { userId, role, phone/email }
 
     // RBAC check
@@ -211,12 +206,7 @@ io.use((socket, next) => {
     return next(new Error('Authentication error: Token missing'));
   }
   try {
-    let decoded;
-    if (token && token.startsWith('mock_token_')) {
-      decoded = { userId: 'usr_mock1', role: 'patient' };
-    } else {
-      decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
-    }
+    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET || 'dev_secret');
     socket.user = decoded;
     next();
   } catch (err) {

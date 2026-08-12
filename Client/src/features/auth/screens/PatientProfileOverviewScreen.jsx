@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSelector, useDispatch } from 'react-redux';
+import { CommonActions } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { logout } from '../authSlice';
 import clinicalApi from '../../clinical/api';
@@ -18,7 +19,16 @@ const { width } = Dimensions.get('window');
 
 export default function PatientProfileOverviewScreen({ navigation }) {
   const dispatch = useDispatch();
-  const { user, token } = useSelector((state) => state.auth);
+  const { user, token, isAuthenticated } = useSelector((state) => state.auth);
+
+  // When Redux logs out, navigate back to the Welcome screen
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigation.dispatch(
+        CommonActions.reset({ index: 0, routes: [{ name: 'Welcome' }] })
+      );
+    }
+  }, [isAuthenticated]);
   const [activeProgram, setActiveProgram] = useState(null);
 
   useEffect(() => {
@@ -239,13 +249,7 @@ export default function PatientProfileOverviewScreen({ navigation }) {
         <TouchableOpacity
           style={styles.logoutBtn}
           activeOpacity={0.85}
-          onPress={() => {
-            dispatch(logout());
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Welcome' }],
-            });
-          }}
+          onPress={() => dispatch(logout())}
         >
           <Text style={styles.logoutBtnText}>Log Out</Text>
         </TouchableOpacity>

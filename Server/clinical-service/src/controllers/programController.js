@@ -77,7 +77,8 @@ export const getMyActiveProgram = async (req, res) => {
           description: 'Comprehensive rehabilitation program for lumbar stability and posture alignment.',
           targetCondition: 'Lower Back Pain',
           durationWeeks: 6,
-          difficulty: 'Intermediate',
+          difficulty: 'intermediate',
+          createdBy: 'system',
           isTemplate: true,
           exercises: [],
         });

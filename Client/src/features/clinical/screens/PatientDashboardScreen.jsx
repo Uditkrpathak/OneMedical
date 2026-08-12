@@ -19,6 +19,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSocket } from '../../../context/SocketContext';
 import clinicalApi from '../api';
+import appointmentApi from '../../appointments/api';
 import { colors } from '../../../theme/colors';
 
 const { width } = Dimensions.get('window');
@@ -29,6 +30,7 @@ export default function PatientDashboardScreen({ navigation }) {
 
   const [activeProgram, setActiveProgram] = useState(null);
   const [exercises, setExercises] = useState([]);
+  const [therapists, setTherapists] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useFocusEffect(
@@ -37,14 +39,22 @@ export default function PatientDashboardScreen({ navigation }) {
       const fetchClinicalData = async () => {
         setLoading(true);
         try {
-          const progRes = await clinicalApi.getActiveProgram(token);
+          const [progRes, exRes, therRes] = await Promise.all([
+            clinicalApi.getActiveProgram(token),
+            clinicalApi.getTodaysExercises(token),
+            appointmentApi.getTherapists(token)
+          ]);
+
           if (isMounted && progRes.success) {
             setActiveProgram(progRes.data?.assignment || progRes.data);
           }
 
-          const exRes = await clinicalApi.getTodaysExercises(token);
           if (isMounted && exRes.success && exRes.data) {
             setExercises(exRes.data.exercises || exRes.data || []);
+          }
+
+          if (isMounted && therRes.success && Array.isArray(therRes.data)) {
+            setTherapists(therRes.data);
           }
         } catch (err) {
           console.warn('[Dashboard] Fetch error:', err.message);
@@ -341,71 +351,47 @@ export default function PatientDashboardScreen({ navigation }) {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.doctorHorizontalList}
         >
-          {/* Doctor Card 1 */}
-          <TouchableOpacity
-            style={styles.doctorCard}
-            activeOpacity={0.9}
-            onPress={() => navigation.navigate('TherapistDetail', { therapist: { name: 'Dr. Ananya Iyer', specialty: 'Senior MSK Specialist', experience: '12+ Years Exp', location: '2.4 km away', rating: 4.9, avatar: require('../../../../assets/images/therapist_male_1.png') } })}
-          >
-            <View style={styles.doctorImageWrap}>
-              <Image
-                source={require('../../../../assets/images/therapist_male_1.png')}
-                style={styles.doctorPhoto}
-              />
-              <View style={styles.ratingBadge}>
-                <Text style={styles.ratingText}>
-                  <Text style={{ color: '#f59e0b' }}>★ </Text>4.9
-                </Text>
-              </View>
-              <View style={styles.availBadge}>
-                <Text style={styles.availBadgeText}>AVAILABLE TODAY</Text>
-              </View>
-            </View>
-            <Text style={styles.docNameText}>Dr. Ananya Iyer</Text>
-            <Text style={styles.docSpecText}>Senior MSK Specialist</Text>
-            <Text style={styles.docExpText}>12+ Years Exp • 2.4 km away</Text>
+          {(therapists.length > 0 ? therapists : [
+            { _id: 'th1', user: { name: 'Dr. Ananya Iyer' }, specializations: ['Senior MSK Specialist'], experienceYears: 12, ratingAvg: 4.9 },
+            { _id: 'th2', user: { name: 'Dr. Arjun Mehta' }, specializations: ['Sports Rehab Specialist'], experienceYears: 10, ratingAvg: 4.8 }
+          ]).map((item, idx) => {
+            const docName = item.user?.name || item.name || 'Specialist';
+            const spec = Array.isArray(item.specializations) ? item.specializations[0] : (item.specialization || 'Physiotherapist');
+            return (
+              <TouchableOpacity
+                key={item._id || idx}
+                style={styles.doctorCard}
+                activeOpacity={0.9}
+                onPress={() => navigation.navigate('TherapistDetail', { therapist: item })}
+              >
+                <View style={styles.doctorImageWrap}>
+                  <Image
+                    source={idx % 2 === 0 ? require('../../../../assets/images/therapist_male_1.png') : require('../../../../assets/images/therapist_female_1.png')}
+                    style={styles.doctorPhoto}
+                  />
+                  <View style={styles.ratingBadge}>
+                    <Text style={styles.ratingText}>
+                      <Text style={{ color: '#f59e0b' }}>★ </Text>{item.ratingAvg || 4.9}
+                    </Text>
+                  </View>
+                  <View style={styles.availBadge}>
+                    <Text style={styles.availBadgeText}>AVAILABLE TODAY</Text>
+                  </View>
+                </View>
+                <Text style={styles.docNameText}>{docName}</Text>
+                <Text style={styles.docSpecText}>{spec}</Text>
+                <Text style={styles.docExpText}>{item.experienceYears || 8}+ Years Exp • Available</Text>
 
-            <TouchableOpacity
-              style={styles.docBookBtn}
-              activeOpacity={0.85}
-              onPress={() => navigation.navigate('Book')}
-            >
-              <Text style={styles.docBookBtnText}>Book Appointment</Text>
-            </TouchableOpacity>
-          </TouchableOpacity>
-
-          {/* Doctor Card 2 */}
-          <TouchableOpacity
-            style={styles.doctorCard}
-            activeOpacity={0.9}
-            onPress={() => navigation.navigate('TherapistDetail', { therapist: { name: 'Dr. Arjun Mehta', specialty: 'Sports Rehab Specialist', experience: '10+ Years Exp', location: '3.1 km away', rating: 4.8, avatar: require('../../../../assets/images/therapist_female_1.png') } })}
-          >
-            <View style={styles.doctorImageWrap}>
-              <Image
-                source={require('../../../../assets/images/therapist_female_1.png')}
-                style={styles.doctorPhoto}
-              />
-              <View style={styles.ratingBadge}>
-                <Text style={styles.ratingText}>
-                  <Text style={{ color: '#f59e0b' }}>★ </Text>4.8
-                </Text>
-              </View>
-              <View style={styles.availBadge}>
-                <Text style={styles.availBadgeText}>AVAILABLE TODAY</Text>
-              </View>
-            </View>
-            <Text style={styles.docNameText}>Dr. Arjun Mehta</Text>
-            <Text style={styles.docSpecText}>Sports Rehab Specialist</Text>
-            <Text style={styles.docExpText}>10+ Years Exp • 3.1 km away</Text>
-
-            <TouchableOpacity
-              style={styles.docBookBtn}
-              activeOpacity={0.85}
-              onPress={() => navigation.navigate('Book')}
-            >
-              <Text style={styles.docBookBtnText}>Book Appointment</Text>
-            </TouchableOpacity>
-          </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.docBookBtn}
+                  activeOpacity={0.85}
+                  onPress={() => navigation.navigate('Book', { therapist: item })}
+                >
+                  <Text style={styles.docBookBtnText}>Book Appointment</Text>
+                </TouchableOpacity>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
 
         {/* POPULAR SERVICES GRID */}

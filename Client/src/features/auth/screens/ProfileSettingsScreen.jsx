@@ -11,13 +11,23 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
+import { CommonActions } from '@react-navigation/native';
 import { logout, updateProfile } from '../authSlice';
 import { useUpdatePatientProfileMutation, useGetMyProfileQuery } from '../authApiSlice';
 import { colors } from '../../../theme/colors';
 
 export default function ProfileSettingsScreen({ navigation }) {
   const dispatch = useDispatch();
-  const { user } = useSelector(state => state.auth);
+  const { user, isAuthenticated } = useSelector(state => state.auth);
+
+  // Navigate to Welcome when Redux state clears on logout
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigation.dispatch(
+        CommonActions.reset({ index: 0, routes: [{ name: 'Welcome' }] })
+      );
+    }
+  }, [isAuthenticated]);
 
   const { data: profileResponse, isLoading: isFetchingProfile } = useGetMyProfileQuery();
   const [updatePatientProfile, { isLoading: isSaving }] = useUpdatePatientProfileMutation();
@@ -185,13 +195,7 @@ export default function ProfileSettingsScreen({ navigation }) {
       {/* Logout & Delete */}
       <TouchableOpacity 
         style={styles.logoutBtn} 
-        onPress={() => {
-          dispatch(logout());
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Welcome' }],
-          });
-        }}
+        onPress={() => dispatch(logout())}
       >
         <Text style={styles.logoutBtnText}>Logout of Account</Text>
       </TouchableOpacity>

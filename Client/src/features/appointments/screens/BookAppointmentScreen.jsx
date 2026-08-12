@@ -412,52 +412,67 @@ export default function BookAppointmentScreen({ navigation }) {
               <ActivityIndicator size="large" color="#0284c7" style={{ marginTop: 40 }} />
             ) : (
               <View style={styles.doctorListContainer}>
-                {[
+                {(therapists.length > 0 ? therapists : [
                   {
-                    id: 'usr_ther1',
-                    name: 'Dr. Anuj Mehta',
+                    _id: 'usr_ther1',
+                    userId: 'usr_ther1',
+                    name: 'Dr. Ananya Iyer',
                     specialty: 'Sports Rehabilitation Specialist',
-                    rating: 4.9,
-                    reviewsCount: 128,
-                    exp: '12+ Years Exp.',
-                    clinic: 'One Medical Hub',
-                    distance: '2.4 km',
-                    fee: 1500,
-                    languages: ['ENGLISH', 'HINDI', 'GUJARATI'],
-                    avatarUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=400',
+                    ratingAvg: 4.9,
+                    ratingCount: 42,
+                    experienceYears: 8,
+                    clinicName: 'One Medical Hub',
+                    consultationFee: 120000,
+                    languages: ['ENGLISH', 'HINDI', 'SPANISH'],
+                    user: { name: 'Dr. Ananya Iyer' }
                   },
                   {
-                    id: 'usr_ther2',
-                    name: 'Dr. Sarah Iyer',
-                    specialty: 'Orthopedic & Spine Expert',
-                    rating: 5.0,
-                    reviewsCount: 69,
-                    exp: '8+ Years Exp.',
-                    clinic: 'City Wellness Plaza',
-                    distance: '3.1 km',
-                    fee: 1200,
+                    _id: 'usr_ther2',
+                    userId: 'usr_ther2',
+                    name: 'Dr. Arjun Mehta',
+                    specialty: 'Spine & Lumbar Rehab Specialist',
+                    ratingAvg: 4.9,
+                    ratingCount: 38,
+                    experienceYears: 12,
+                    clinicName: 'One Medical HQ',
+                    consultationFee: 150000,
                     languages: ['ENGLISH', 'HINDI'],
-                    avatarUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400',
+                    user: { name: 'Dr. Arjun Mehta' }
                   },
-                ]
+                ])
                   .filter(d => {
-                    const match = d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      d.specialty.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      d.clinic.toLowerCase().includes(searchQuery.toLowerCase());
+                    const docName = d.user?.name || d.name || 'Specialist';
+                    const docSpec = Array.isArray(d.specializations) ? d.specializations.join(' ') : (d.specialty || '');
+                    const docLoc = d.clinicName || d.clinicLocation?.address || d.clinic || '';
+                    const match = docName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      docSpec.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      docLoc.toLowerCase().includes(searchQuery.toLowerCase());
                     if (!match) return false;
-                    if (selectedFilter === 'top_rated') return d.rating >= 5.0;
+                    if (selectedFilter === 'top_rated') return (d.ratingAvg || d.rating || 4.8) >= 4.9;
                     return true;
                   })
-                  .map((doctor) => {
-                    const isFav = !!favorites[doctor.id];
+                  .map((doctor, idx) => {
+                    const docId = doctor._id || doctor.userId || `doc_${idx}`;
+                    const docName = doctor.user?.name || doctor.name || 'Dr. Specialist';
+                    const docSpec = Array.isArray(doctor.specializations) && doctor.specializations.length > 0 ? doctor.specializations[0] : (doctor.specialty || 'Physiotherapist');
+                    const rating = doctor.ratingAvg || doctor.rating || 4.9;
+                    const reviewsCount = doctor.ratingCount || doctor.reviewsCount || 42;
+                    const expYears = doctor.experienceYears || doctor.exp || 8;
+                    const feeInRupees = doctor.consultationFee ? Math.round(doctor.consultationFee / 100) : (doctor.fee || 1200);
+                    const languages = Array.isArray(doctor.languages) ? doctor.languages : ['ENGLISH', 'HINDI'];
+                    const avatarUrl = idx % 2 === 0
+                      ? 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400'
+                      : 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=400';
+
+                    const isFav = !!favorites[docId];
                     return (
-                      <View key={doctor.id} style={styles.doctorListCard}>
+                      <View key={docId} style={styles.doctorListCard}>
                         <View style={styles.docRowHeader}>
-                          <Image source={{ uri: doctor.avatarUrl }} style={styles.docListAvatar} />
+                          <Image source={{ uri: avatarUrl }} style={styles.docListAvatar} />
                           <View style={styles.docListMainInfo}>
                             <View style={styles.docNameFavRow}>
-                              <Text style={styles.docListName}>{doctor.name}</Text>
-                              <TouchableOpacity onPress={() => toggleFavorite(doctor.id)}>
+                              <Text style={styles.docListName}>{docName}</Text>
+                              <TouchableOpacity onPress={() => toggleFavorite(docId)}>
                                 <Ionicons
                                   name={isFav ? 'heart' : 'heart-outline'}
                                   size={22}
@@ -465,21 +480,21 @@ export default function BookAppointmentScreen({ navigation }) {
                                 />
                               </TouchableOpacity>
                             </View>
-                            <Text style={styles.docListSpecialty}>{doctor.specialty}</Text>
-                            <Text style={styles.docListRatingExp}>★ {doctor.rating} ({doctor.reviewsCount} reviews) • {doctor.exp}</Text>
-                            <Text style={styles.docListLocation}>📍 {doctor.clinic} • {doctor.distance}</Text>
+                            <Text style={styles.docListSpecialty}>{docSpec}</Text>
+                            <Text style={styles.docListRatingExp}>★ {rating} ({reviewsCount} reviews) • {expYears}+ Years Exp.</Text>
+                            <Text style={styles.docListLocation}>📍 {doctor.clinicName || 'One Medical Hub'} • 2.4 km</Text>
                           </View>
                         </View>
 
                         <View style={styles.docBadgesRow}>
                           <View style={styles.badgeGreen}><Text style={styles.badgeGreenText}>AVAILABLE TODAY</Text></View>
-                          <View style={styles.badgeGray}><Text style={styles.badgeGrayText}>{doctor.languages.join(', ')}</Text></View>
+                          <View style={styles.badgeGray}><Text style={styles.badgeGrayText}>{languages.join(', ')}</Text></View>
                         </View>
 
                         <View style={styles.docFooterRow}>
                           <View>
                             <Text style={styles.feeLabelText}>CONSULTATION FEE</Text>
-                            <Text style={styles.feeAmountText}>₹{doctor.fee.toLocaleString()}</Text>
+                            <Text style={styles.feeAmountText}>₹{feeInRupees.toLocaleString()}</Text>
                           </View>
                           <TouchableOpacity
                             style={styles.docViewProfileBtn}

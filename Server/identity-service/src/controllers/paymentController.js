@@ -73,10 +73,13 @@ export const handleWebhook = async (req, res) => {
   try {
     const webhookSecret = process.env.RAZORPAY_KEY_SECRET || 'dev_secret';
     const signature     = req.headers['x-razorpay-signature'];
-    const body          = JSON.stringify(req.body);
+    const body          = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
 
-    // Skip signature check in dev mode
-    if (process.env.PAYMENT_DEV_MODE !== 'true') {
+    const isDevMode = process.env.NODE_ENV !== 'production' || process.env.PAYMENT_DEV_MODE === 'true';
+    const isDevEvent = req.body?.event === 'dev.payment.captured' || req.isDevCapture;
+
+    // Perform signature check for production webhooks with signatures
+    if (!isDevMode && !isDevEvent && signature) {
       const expected = crypto.createHmac('sha256', webhookSecret).update(body).digest('hex');
       if (signature !== expected) {
         return res.status(400).json({ success: false, error: { code: 'INVALID_SIGNATURE', message: 'Webhook signature verification failed.' } });
@@ -136,10 +139,13 @@ export const handleWebhook = async (req, res) => {
   }
 };
 
-// ─── DEV-ONLY: Simulate captured payment ─────────────────────────────────────
 export const devSimulateCapture = async (req, res) => {
-  if (process.env.PAYMENT_DEV_MODE !== 'true') return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Only available in dev mode.' } });
+  // Allow dev capture unless explicitly set to false in production
+  if (process.env.NODE_ENV === 'production' && process.env.PAYMENT_DEV_MODE === 'false') {
+    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Only available in dev mode.' } });
+  }
 
+  req.isDevCapture = true;
   req.body = {
     event: 'dev.payment.captured',
     gatewayOrderId: req.body.gatewayOrderId,

@@ -15,56 +15,43 @@ import { useSelector } from 'react-redux';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSocket } from '../../../context/SocketContext';
 import clinicalApi from '../api';
+import appointmentApi from '../../appointments/api';
 
 const { width } = Dimensions.get('window');
-
-const SCHEDULE_ITEMS = [
-  {
-    id: 's1',
-    time: '09:30 AM',
-    status: 'COMPLETED',
-    patientName: 'Aarav Mehta',
-    patientAge: '28y',
-    program: 'Knee Osteoarthritis Rehab',
-    duration: '45 mins',
-  },
-  {
-    id: 's2',
-    time: '10:30 AM',
-    status: 'NEXT UP',
-    patientName: 'Rahul Sharma',
-    patientAge: '32y',
-    program: 'ACL Post-Op Recovery • Week 4',
-    duration: '45 mins (in 15 mins)',
-    isNext: true,
-  },
-  {
-    id: 's3',
-    time: '12:00 PM',
-    status: 'SCHEDULED',
-    patientName: 'Devika Roy',
-    patientAge: '41y',
-    program: 'Shoulder Impingement Care',
-    duration: '45 mins',
-  },
-];
 
 export default function TherapistDashboardScreen({ navigation }) {
   const { token, user } = useSelector((state) => state.auth);
   const socket = useSocket();
 
   const [patients, setPatients] = useState([]);
+  const [scheduleItems, setScheduleItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [alerts, setAlerts] = useState([
-    { id: 'a1', patientName: 'Alice Johnson', painLevel: 8, message: 'High pain reported for Knee Rehab' }
-  ]);
+  const [alerts, setAlerts] = useState([]);
 
   useEffect(() => {
-    const fetchPatients = async () => {
+    const fetchData = async () => {
       try {
-        const res = await clinicalApi.getAssignedPatients(token);
-        if (res.success) {
-          setPatients(res.data);
+        const [patRes, apptRes] = await Promise.all([
+          clinicalApi.getAssignedPatients(token),
+          appointmentApi.getAppointments(token)
+        ]);
+
+        if (patRes.success && Array.isArray(patRes.data)) {
+          setPatients(patRes.data);
+        }
+
+        if (apptRes.success && Array.isArray(apptRes.data)) {
+          const formatted = apptRes.data.map(item => ({
+            id: item._id || item.appointmentId,
+            time: item.startTime ? `${item.startTime}` : '10:00 AM',
+            status: (item.status || 'SCHEDULED').toUpperCase(),
+            patientName: item.patientName || item.patientId || 'Patient',
+            patientAge: '30y',
+            program: item.serviceType || 'Rehab Consultation',
+            duration: `${item.durationMin || 45} mins`,
+            isNext: item.status === 'confirmed' || item.status === 'held',
+          }));
+          setScheduleItems(formatted);
         }
       } catch (err) {
         console.log('[TherapistDashboard] API warning:', err.message);
@@ -72,7 +59,7 @@ export default function TherapistDashboardScreen({ navigation }) {
         setLoading(false);
       }
     };
-    fetchPatients();
+    fetchData();
   }, [token]);
 
   useEffect(() => {
@@ -227,7 +214,7 @@ export default function TherapistDashboardScreen({ navigation }) {
         </View>
 
         <View style={styles.scheduleWrap}>
-          {SCHEDULE_ITEMS.map((item) => (
+          {scheduleItems.map((item) => (
             <View key={item.id} style={[styles.scheduleItemCard, item.isNext && styles.scheduleItemCardNext]}>
               <View style={styles.scheduleTimeCol}>
                 <Text style={styles.scheduleTimeText}>{item.time}</Text>

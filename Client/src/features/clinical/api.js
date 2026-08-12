@@ -6,14 +6,14 @@ export const clinicalApi = {
     const res = await resilientFetch(
       '/programs/my/active',
       { headers: { Authorization: `Bearer ${token}` } },
-      () => mockDb.activePrograms['usr_pat1']
+      () => mockDb.activePrograms?.['usr_pat1'] || null
     );
     return { success: res.success, data: res.data, source: res.source };
   },
 
   getTodaysExercises: async (token) => {
     const mockFn = () => {
-      const activeProg = mockDb.activePrograms['usr_pat1'];
+      const activeProg = mockDb.activePrograms?.['usr_pat1'];
       return activeProg ? activeProg.exerciseOverrides : [];
     };
 
@@ -38,17 +38,17 @@ export const clinicalApi = {
         completedOffline: sessionData.completedOffline || false,
         createdAt: new Date().toISOString()
       };
-      mockDb.sessionLogs.unshift(newLog);
+      if (mockDb.sessionLogs) mockDb.sessionLogs.unshift(newLog);
 
-      const activeProg = mockDb.activePrograms['usr_pat1'];
-      if (activeProg) {
-        const adherenceInc = Math.min(100, activeProg.adherencePercent + 2);
+      const activeProg = mockDb.activePrograms?.['usr_pat1'];
+      if (activeProg && mockDb.activePrograms) {
+        const adherenceInc = Math.min(100, (activeProg.adherencePercent || 80) + 2);
         const painScore = Math.max(0, 100 - sessionData.painLevel * 10);
-        const newPainTrendScore = Math.round((activeProg.painTrendScore + painScore) / 2);
+        const newPainTrendScore = Math.round(((activeProg.painTrendScore || 70) + painScore) / 2);
         const newRecoveryScore = Math.round(
           adherenceInc * 0.5 +
           newPainTrendScore * 0.3 +
-          activeProg.milestoneScore * 0.2
+          (activeProg.milestoneScore || 80) * 0.2
         );
         mockDb.activePrograms['usr_pat1'] = {
           ...activeProg,
@@ -176,6 +176,7 @@ export const clinicalApi = {
         ],
         exerciseOverrides: overrides
       };
+      if (!mockDb.activePrograms) mockDb.activePrograms = {};
       mockDb.activePrograms[prescriptionData.patientId] = newProgram;
       return { patientProgram: newProgram };
     };

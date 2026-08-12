@@ -73,7 +73,7 @@ export const confirmAppointment = async (req, res) => {
 // ─── CANCEL APPOINTMENT ────────────────────────────────────────────────────────
 export const cancelAppointment = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id || req.body.appointmentId || req.body.id;
     const { reason } = req.body;
     const userId = req.headers['x-user-id'];
     const userRole = req.headers['x-user-role'];
@@ -166,7 +166,7 @@ export const getAvailableSlots = async (req, res) => {
 // ─── RESCHEDULE APPOINTMENT ──────────────────────────────────────────────────
 export const rescheduleAppointment = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id || req.body.appointmentId || req.body.id;
     const { newDate, newTime, date, startTime, endTime } = req.body;
     const userId = req.headers['x-user-id'];
     const userRole = req.headers['x-user-role'];

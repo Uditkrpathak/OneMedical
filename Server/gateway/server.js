@@ -153,6 +153,7 @@ app.use('/api/v1/exercises',     makeProxy(CLINICAL_URL));
 app.use('/api/v1/sessions',      makeProxy(CLINICAL_URL));
 app.use('/api/v1/medical-records', makeProxy(CLINICAL_URL));
 
+app.use('/api/v1/clinical',       makeProxy(CLINICAL_URL));
 app.use('/api/clinical/programs',      makeProxy(CLINICAL_URL));
 app.use('/api/clinical/exercises',     makeProxy(CLINICAL_URL));
 app.use('/api/clinical/sessions',      makeProxy(CLINICAL_URL));

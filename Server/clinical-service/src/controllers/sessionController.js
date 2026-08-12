@@ -9,6 +9,8 @@ export const logSession = async (req, res) => {
     const patientId = req.headers['x-user-id'] || req.body.userId || 'usr_pat1';
     const { patientProgramId, sessionLogId, date, exercisesCompleted, painLevel, notes, completedOffline } = req.body;
 
+    let targetProgramId = patientProgramId;
+    let prevScore = 0;
     let activeProgram = null;
     if (targetProgramId) {
       activeProgram = await PatientProgram.findById(targetProgramId);

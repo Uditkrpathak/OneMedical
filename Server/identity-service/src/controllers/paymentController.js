@@ -226,3 +226,85 @@ export const computePayout = async (req, res) => {
     res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: err.message } });
   }
 };
+
+// ─── PROCESS PAYMENT ──────────────────────────────────────────────────────────
+export const processPayment = async (req, res) => {
+  try {
+    const patientId = req.headers['x-user-id'] || 'usr_pat1';
+    const { appointmentId, therapistId, amountPaise, method, paymentPlace } = req.body;
+
+    if (!appointmentId || !amountPaise) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'appointmentId and amountPaise are required.' } });
+    }
+
+    const gatewayOrderId = `pay_order_${Date.now()}`;
+    const gatewayPaymentId = `pay_txn_${Date.now()}`;
+
+    const transaction = await Transaction.create({
+      appointmentId,
+      patientId,
+      therapistId,
+      amountPaise,
+      currency: 'INR',
+      gateway: 'razorpay',
+      gatewayOrderId,
+      gatewayPaymentId,
+      idempotencyKey: appointmentId,
+      method: method || 'online',
+      paymentPlace: paymentPlace || 'online',
+      status: 'captured',
+      statusHistory: [
+        { status: 'created', note: 'Order initiated.' },
+        { status: 'captured', note: 'Payment processed successfully.' }
+      ]
+    });
+
+    const invoiceNumber = await generateInvoiceNumber();
+    const invoice = await Invoice.create({
+      transactionId: transaction._id,
+      patientId,
+      invoiceNumber,
+      breakdown: { subtotal: amountPaise, tax: 0, discount: 0, total: amountPaise },
+    });
+
+    // Confirm appointment in clinical service
+    try {
+      const schedulingUrl = process.env.CLINICAL_SERVICE_URL || 'http://localhost:5002';
+      const { default: fetch } = await import('node-fetch');
+      await fetch(`${schedulingUrl}/api/v1/appointments/${appointmentId}/confirm`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': 'identity-service', 'x-user-role': 'clinic_admin' },
+        body: JSON.stringify({ paymentTxnId: transaction._id }),
+      });
+    } catch (e) {
+      console.warn('[Payment] Could not confirm appointment in clinical service:', e.message);
+    }
+
+    await publishEvent('payment.succeeded', {
+      transactionId: transaction._id,
+      appointmentId,
+      patientId,
+      therapistId,
+      amountPaise
+    });
+
+    res.status(201).json({ success: true, data: { transaction, invoice } });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: err.message } });
+  }
+};
+
+// ─── GET INVOICES ─────────────────────────────────────────────────────────────
+export const getInvoices = async (req, res) => {
+  try {
+    const patientId = req.headers['x-user-id'];
+    const userRole = req.headers['x-user-role'];
+    const filter = {};
+    if (userRole === 'patient') filter.patientId = patientId;
+
+    const invoices = await Invoice.find(filter).sort({ createdAt: -1 }).lean();
+    res.json({ success: true, data: invoices });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: err.message } });
+  }
+};

@@ -8,6 +8,7 @@ const router = express.Router();
 
 // ── SESSIONS (Root + Versioned + Root Aliases) ──────────────────────────────
 router.post('/sessions',                              logSession);
+router.post('/sessions/log',                          logSession);
 router.post('/',                                      logSession);
 router.get('/sessions',                               getSessionHistory);
 router.get('/',                                       getSessionHistory);
@@ -17,11 +18,14 @@ router.patch('/sessions/:id',                         updateSession);
 router.delete('/sessions/:id',                        deleteSession);
 
 router.post('/api/v1/sessions',                       logSession);
+router.post('/api/v1/sessions/log',                   logSession);
+router.post('/api/v1/clinical/sessions/log',          logSession);
 router.get('/api/v1/sessions',                        getSessionHistory);
 router.get('/api/v1/sessions/pain-trend/:patientProgramId', getPainTrend);
 
 // ── PROGRAMS & TODAY'S EXERCISES ─────────────────────────────────────────────
 router.get('/programs/my/active',                     getMyActiveProgram);
+router.get('/programs/active',                        getMyActiveProgram);
 router.get('/my/active',                              getMyActiveProgram);
 router.get('/programs/my/today',                      getTodaysExercises);
 router.get('/my/today',                               getTodaysExercises);
@@ -32,6 +36,8 @@ router.post('/programs/:programId/assign',            assignProgram);
 router.patch('/programs/:id/status',                  updateProgramStatus);
 
 router.get('/api/v1/programs/my/active',              getMyActiveProgram);
+router.get('/api/v1/programs/active',                 getMyActiveProgram);
+router.get('/api/v1/clinical/programs/active',         getMyActiveProgram);
 router.get('/api/v1/programs/my/today',               getTodaysExercises);
 router.get('/api/v1/programs',                        listPrograms);
 
@@ -59,6 +65,7 @@ router.post('/api/v1/medical-records',                createMedicalRecord);
 // ── THERAPIST ADMIN VIEWS ─────────────────────────────────────────────────────
 router.get('/admin/patients',                         getAssignedPatients);
 router.get('/patients/assigned',                      getAssignedPatients);
+router.get('/api/v1/clinical/patients/assigned',     getAssignedPatients);
 
 // Service Root Info
 router.get('/', (req, res) => {

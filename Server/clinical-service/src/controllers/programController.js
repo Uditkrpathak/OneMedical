@@ -1,5 +1,6 @@
 import Program from '../models/Program.js';
 import PatientProgram from '../models/PatientProgram.js';
+import SessionLog from '../models/SessionLog.js';
 
 // ─── CREATE PROGRAM ───────────────────────────────────────────────────────────
 export const createProgram = async (req, res) => {

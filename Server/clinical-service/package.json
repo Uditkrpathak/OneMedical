@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "dev": "node --watch server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node ../test_integration.js"
   },
   "dependencies": {
     "amqplib": "^0.10.4",

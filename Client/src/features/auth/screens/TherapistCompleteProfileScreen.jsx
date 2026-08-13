@@ -121,7 +121,7 @@ export default function TherapistCompleteProfileScreen({ navigation }) {
         <View style={styles.avatarPickerWrap}>
           <View style={styles.avatarCircle}>
             <Image
-              source={require('../../../../assets/images/therapist_female_1.png')}
+              source={require('../../../../assets/images/therapist_female_1.jpg')}
               style={styles.avatarPhoto}
             />
             <TouchableOpacity style={styles.cameraCircle}>

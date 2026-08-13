@@ -63,7 +63,7 @@ export default function MyBookingsScreen({ navigation }) {
             time: `${item.startTime || '10:30 AM'} – ${item.endTime || '11:15 AM'}`,
             location: item.location?.address || 'One Medical Central, MG Road',
             format: item.type === 'online' ? 'Video Consultation' : 'Clinic Visit',
-            avatar: require('../../../../assets/images/therapist_female_1.png'),
+            avatar: require('../../../../assets/images/therapist_female_1.jpg'),
           }));
           setBookings(formatted);
         } else {

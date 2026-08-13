@@ -25,7 +25,7 @@ const MOCK_RECORD_LOOKUP = {
     date: '24 Oct 2023',
     fileType: 'PDF Document',
     notes: 'Initial evaluation indicates mild L4-L5 lumbar strain with hamstring tightness. Prescribed 4-week active physical therapy routine focusing on lumbar extension and core stability.',
-    image: require('../../../../assets/images/spine_3d_model.png'),
+    image: require('../../../../assets/images/spine_3d_model.jpg'),
     imageLabel: 'Spine Assessment Map',
   },
   'MRI Lumbar Spine': {
@@ -35,7 +35,7 @@ const MOCK_RECORD_LOOKUP = {
     date: '18 Oct 2023',
     fileType: 'DICOM / PDF',
     notes: 'Scan indicates mild L4-L5 disc protrusion without spinal stenosis. Core stabilization and progressive lumbar extension recommended.',
-    image: require('../../../../assets/images/spine_3d_model.png'),
+    image: require('../../../../assets/images/spine_3d_model.jpg'),
     imageLabel: 'HD MRI Scan View',
   },
   'Progress Summary Q3': {
@@ -76,7 +76,7 @@ export default function MedicalRecordViewerScreen({ route, navigation }) {
     fileType: passedRecord?.fileType || 'PDF',
     notes: passedRecord?.notes || 'Encrypted clinical record verified with 256-bit AES protection.',
     image: titleKey.includes('MRI') || titleKey.includes('X-Ray') || titleKey.includes('Scan')
-      ? require('../../../../assets/images/spine_3d_model.png')
+      ? require('../../../../assets/images/spine_3d_model.jpg')
       : null,
     imageLabel: 'Document Preview',
   };

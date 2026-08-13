@@ -167,7 +167,7 @@ export default function PatientDashboardScreen({ navigation }) {
             <TouchableOpacity
               style={styles.heroBtnPrimary}
               activeOpacity={0.85}
-              onPress={() => navigation.navigate('AppointmentDetail', { booking: { id: '#APT-2024-7719', doctorName: 'Dr. Sarah Johnson', specialty: 'Orthopedic Physiotherapist', status: 'Upcoming', date: 'Today • 10:30 AM', clinic: 'ONE MEDICAL Clinic, Hyderabad', address: 'Plot 42, Road 36, Jubilee Hills, Hyderabad', avatar: require('../../../../assets/images/therapist_female_1.png') } })}
+              onPress={() => navigation.navigate('AppointmentDetail', { booking: { id: '#APT-2024-7719', doctorName: 'Dr. Sarah Johnson', specialty: 'Orthopedic Physiotherapist', status: 'Upcoming', date: 'Today • 10:30 AM', clinic: 'ONE MEDICAL Clinic, Hyderabad', address: 'Plot 42, Road 36, Jubilee Hills, Hyderabad', avatar: require('../../../../assets/images/therapist_female_1.jpg') } })}
             >
               <Text style={styles.heroBtnPrimaryText}>View Details</Text>
             </TouchableOpacity>
@@ -366,7 +366,7 @@ export default function PatientDashboardScreen({ navigation }) {
               >
                 <View style={styles.doctorImageWrap}>
                   <Image
-                    source={idx % 2 === 0 ? require('../../../../assets/images/therapist_male_1.png') : require('../../../../assets/images/therapist_female_1.png')}
+                    source={idx % 2 === 0 ? require('../../../../assets/images/therapist_male_1.jpg') : require('../../../../assets/images/therapist_female_1.jpg')}
                     style={styles.doctorPhoto}
                   />
                   <View style={styles.ratingBadge}>

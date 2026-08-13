@@ -32,7 +32,7 @@ const DEFAULT_SPECIALISTS = [
     distanceKm: '2.4 km',
     clinicName: 'One Medical HQ Road',
     nextSlot: 'Next: Tomorrow, 10:30 AM',
-    photo: require('../../../../assets/images/therapist_male_1.png'),
+    photo: require('../../../../assets/images/therapist_male_1.jpg'),
     avatarUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=800',
   },
   {
@@ -45,7 +45,7 @@ const DEFAULT_SPECIALISTS = [
     distanceKm: '1.1 km',
     clinicName: 'One Medical Chelsea',
     nextSlot: 'Next: Mon, 9:00 AM',
-    photo: require('../../../../assets/images/therapist_female_1.png'),
+    photo: require('../../../../assets/images/therapist_female_1.jpg'),
     avatarUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=800',
   },
   {
@@ -58,7 +58,7 @@ const DEFAULT_SPECIALISTS = [
     distanceKm: '5.8 km',
     clinicName: 'One Medical South',
     nextSlot: 'Next: Today, 4:00 PM',
-    photo: require('../../../../assets/images/therapist_female_1.png'),
+    photo: require('../../../../assets/images/therapist_female_1.jpg'),
     avatarUrl: 'https://images.unsplash.com/photo-1594824813566-88855ce78347?w=800',
   },
 ];

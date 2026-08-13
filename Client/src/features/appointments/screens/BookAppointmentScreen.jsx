@@ -214,7 +214,7 @@ export default function BookAppointmentScreen({ navigation }) {
             {/* Recently Booked 1 */}
             <TouchableOpacity style={styles.recentCard} onPress={() => setStep(3)}>
               <View style={styles.recentAvatarWrap}>
-                <Image source={require('../../../../assets/images/therapist_male_1.png')} style={styles.recentAvatar} />
+                <Image source={require('../../../../assets/images/therapist_male_1.jpg')} style={styles.recentAvatar} />
                 <View style={styles.recentBadgeIcon}>
                   <Ionicons name="time-outline" size={12} color="#ffffff" />
                 </View>
@@ -229,7 +229,7 @@ export default function BookAppointmentScreen({ navigation }) {
             {/* Recently Booked 2 */}
             <TouchableOpacity style={styles.recentCard} onPress={() => setStep(3)}>
               <View style={styles.recentAvatarWrap}>
-                <Image source={require('../../../../assets/images/therapist_female_1.png')} style={styles.recentAvatar} />
+                <Image source={require('../../../../assets/images/therapist_female_1.jpg')} style={styles.recentAvatar} />
               </View>
               <View>
                 <Text style={styles.recentDocName}>Dr. Sarah Iyer</Text>

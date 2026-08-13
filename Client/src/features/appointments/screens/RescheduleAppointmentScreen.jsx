@@ -16,7 +16,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import appointmentApi from '../api';
 
 const { width } = Dimensions.get('window');
-const defaultAvatarAsset = require('../../../../assets/images/therapist_female_1.png');
+const defaultAvatarAsset = require('../../../../assets/images/therapist_female_1.jpg');
 
 const getAvatarSource = (source) => {
   if (!source) return defaultAvatarAsset;

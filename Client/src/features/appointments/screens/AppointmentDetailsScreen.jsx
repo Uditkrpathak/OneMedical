@@ -40,7 +40,7 @@ export default function AppointmentDetailsScreen({ route, navigation }) {
         <View style={styles.patientCard}>
           <View style={styles.patientTopRow}>
             <Image
-              source={require('../../../../assets/images/therapist_female_1.png')}
+              source={require('../../../../assets/images/therapist_female_1.jpg')}
               style={styles.patientPhoto}
             />
             <View style={styles.patientInfo}>

@@ -79,7 +79,7 @@ export default function TherapistDashboardScreen({ navigation }) {
       {/* TOP BAR */}
       <View style={styles.topBarRow}>
         <Image
-          source={require('../../../../assets/images/therapist_male_1.png')}
+          source={require('../../../../assets/images/therapist_male_1.jpg')}
           style={styles.headerAvatar}
         />
         <View style={{ flex: 1, marginLeft: 12 }}>
@@ -139,7 +139,7 @@ export default function TherapistDashboardScreen({ navigation }) {
         <View style={styles.nextPatientCard}>
           <View style={styles.nextPatientHeader}>
             <Image
-              source={require('../../../../assets/images/therapist_male_1.png')}
+              source={require('../../../../assets/images/therapist_male_1.jpg')}
               style={styles.nextPatientAvatar}
             />
             <View style={{ flex: 1 }}>

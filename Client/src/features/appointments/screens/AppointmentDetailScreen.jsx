@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 const { width } = Dimensions.get('window');
-const defaultAvatarAsset = require('../../../../assets/images/therapist_female_1.png');
+const defaultAvatarAsset = require('../../../../assets/images/therapist_female_1.jpg');
 
 const getAvatarSource = (source) => {
   if (!source) return defaultAvatarAsset;

@@ -31,7 +31,7 @@ export default function RecoveryProgramDetailScreen({ navigation }) {
         {/* HERO ANATOMICAL DIAGRAM CARD */}
         <View style={styles.diagramCard}>
           <Image
-            source={require('../../../../assets/images/spine_3d_model.png')}
+            source={require('../../../../assets/images/spine_3d_model.jpg')}
             style={styles.spinePhoto}
           />
         </View>

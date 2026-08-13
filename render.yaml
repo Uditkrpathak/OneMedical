@@ -32,6 +32,8 @@ services:
         sync: false
       - key: INTERNAL_API_KEY
         generateValue: true
+      - key: IDENTITY_SERVICE_URL
+        value: https://onemedical-identity.onrender.com
 
   - type: web
     name: onemedical-gateway

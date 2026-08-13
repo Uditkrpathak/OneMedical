@@ -184,7 +184,8 @@ export const getAssignedPatients = async (req, res) => {
     let usersMap = {};
     if (patientIds.length > 0) {
       try {
-        const response = await fetch(`http://localhost:5001/internal/users?ids=${patientIds.join(',')}`);
+        const identityUrl = process.env.IDENTITY_SERVICE_URL || 'http://localhost:5001';
+        const response = await fetch(`${identityUrl}/internal/users?ids=${patientIds.join(',')}`);
         if (response.ok) {
           const resData = await response.json();
           if (resData.success && resData.data) {

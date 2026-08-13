@@ -25,8 +25,5 @@ const TransactionSchema = new mongoose.Schema({
   isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
 
-TransactionSchema.index({ idempotencyKey: 1 });
-TransactionSchema.index({ gatewayPaymentId: 1 });
-
 const Transaction = mongoose.model('Transaction', TransactionSchema);
 export default Transaction;

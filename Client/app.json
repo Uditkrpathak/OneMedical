@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "OneMedical",
-    "slug": "OneMedical",
+    "slug": "Client",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",

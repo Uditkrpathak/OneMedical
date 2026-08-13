@@ -179,7 +179,11 @@ app.get('/api/v1/health', async (req, res) => {
       const data = await resVal.json();
       results[s.name] = { status: 'healthy', ...data };
     } catch (e) {
-      results[s.name] = { status: 'unreachable', error: e.message };
+      results[s.name] = { 
+        status: 'unreachable', 
+        error: e.message, 
+        cause: e.cause ? { message: e.cause.message, code: e.cause.code } : null 
+      };
     }
   }
 

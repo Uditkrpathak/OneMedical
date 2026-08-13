@@ -33,7 +33,7 @@ export default function SetupCompleteScreen({ navigation }) {
       {/* Top Hero Image */}
       <View style={styles.headerImageContainer}>
         <Image
-          source={require('../../../../assets/images/onboarding_complete.png')}
+          source={{ uri: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=800&q=80' }}
           style={styles.heroImage}
           resizeMode="cover"
         />

@@ -100,7 +100,7 @@ export default function AboutScreen({ navigation }) {
         {/* CLINIC HERO IMAGE CARD */}
         <View style={styles.clinicImageWrap}>
           <Image
-            source={require('../../../../assets/images/clinic_location_1.png')}
+            source={{ uri: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=800&q=80' }}
             style={styles.clinicImage}
             resizeMode="cover"
           />

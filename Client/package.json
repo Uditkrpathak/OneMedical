@@ -1,5 +1,5 @@
 {
-  "name": "client",
+  "name": "onemedical",
   "main": "index.js",
   "version": "1.0.0",
   "dependencies": {

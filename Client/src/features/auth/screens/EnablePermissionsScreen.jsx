@@ -33,7 +33,7 @@ export default function EnablePermissionsScreen({ navigation }) {
       {/* Top Hero Image Banner */}
       <View style={styles.headerImageContainer}>
         <Image
-          source={require('../../../../assets/images/onboarding_permissions.png')}
+          source={{ uri: 'https://images.unsplash.com/photo-1563207153-f403bf289096?auto=format&fit=crop&w=800&q=80' }}
           style={styles.heroImage}
           resizeMode="cover"
         />

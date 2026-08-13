@@ -38,6 +38,8 @@ app.use(globalLimiter);
 // ─── Public Routes (no JWT required) ─────────────────────────────────────────
 const PUBLIC_ROUTES = [
   { method: 'GET',  path: '/healthz' },
+  { method: 'GET',  path: '/health' },
+  { method: 'GET',  path: '/api/v1/health' },
   { method: 'POST', path: '/api/v1/auth/otp/request' },
   { method: 'POST', path: '/api/v1/auth/otp/verify' },
   { method: 'POST', path: '/api/v1/auth/login' },
@@ -162,6 +164,7 @@ app.use('/api/v1/admin/patients', makeProxy(CLINICAL_URL));
 
 // ─── Health Check & Aggregator ───────────────────────────────────────────────
 app.get('/healthz', (req, res) => res.json({ status: 'ok', service: 'gateway', timestamp: new Date().toISOString() }));
+app.get('/health', (req, res) => res.json({ status: 'ok', service: 'gateway', timestamp: new Date().toISOString() }));
 
 app.get('/api/v1/health', async (req, res) => {
   const services = [

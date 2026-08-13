@@ -127,8 +127,8 @@ const makeProxy = (target) =>
   });
 
 // ─── Route → Service Mapping (2 Core Microservices) ──────────────────────────
-const IDENTITY_URL = process.env.IDENTITY_SERVICE_URL || 'http://localhost:5001';
-const CLINICAL_URL = process.env.CLINICAL_SERVICE_URL || 'http://localhost:5003';
+const IDENTITY_URL = process.env.IDENTITY_SERVICE_URL || 'https://onemedical-identity.onrender.com';
+const CLINICAL_URL = process.env.CLINICAL_SERVICE_URL || 'https://onemedical-clinical.onrender.com';
 
 // Service 1: Identity & Payment Service (Port 5001)
 app.use('/api/v1/auth',          makeProxy(IDENTITY_URL));

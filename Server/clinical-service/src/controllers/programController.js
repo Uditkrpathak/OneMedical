@@ -184,7 +184,7 @@ export const getAssignedPatients = async (req, res) => {
     let usersMap = {};
     if (patientIds.length > 0) {
       try {
-        const identityUrl = process.env.IDENTITY_SERVICE_URL || 'http://localhost:5001';
+        const identityUrl = process.env.IDENTITY_SERVICE_URL || 'https://onemedical-identity.onrender.com';
         const response = await fetch(`${identityUrl}/internal/users?ids=${patientIds.join(',')}`);
         if (response.ok) {
           const resData = await response.json();

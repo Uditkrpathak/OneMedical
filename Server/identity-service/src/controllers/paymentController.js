@@ -117,7 +117,7 @@ export const handleWebhook = async (req, res) => {
 
         // Tell Clinical/Scheduling Service to confirm the appointment
         try {
-          const schedulingUrl = process.env.CLINICAL_SERVICE_URL || process.env.SCHEDULING_SERVICE_URL || 'http://localhost:5003';
+          const schedulingUrl = process.env.CLINICAL_SERVICE_URL || process.env.SCHEDULING_SERVICE_URL || 'https://onemedical-clinical.onrender.com';
           const { default: fetch } = await import('node-fetch');
           await fetch(`${schedulingUrl}/api/v1/appointments/${txn.appointmentId}/confirm`, {
             method: 'PATCH',
@@ -275,7 +275,7 @@ export const processPayment = async (req, res) => {
 
     // Confirm appointment in clinical service
     try {
-      const schedulingUrl = process.env.CLINICAL_SERVICE_URL || 'http://localhost:5003';
+      const schedulingUrl = process.env.CLINICAL_SERVICE_URL || 'https://onemedical-clinical.onrender.com';
       const { default: fetch } = await import('node-fetch');
       await fetch(`${schedulingUrl}/api/v1/appointments/${appointmentId}/confirm`, {
         method: 'PATCH',

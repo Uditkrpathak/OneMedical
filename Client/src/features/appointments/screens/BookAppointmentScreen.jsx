@@ -412,34 +412,49 @@ export default function BookAppointmentScreen({ navigation }) {
               <ActivityIndicator size="large" color="#0284c7" style={{ marginTop: 40 }} />
             ) : (
               <View style={styles.doctorListContainer}>
-                {(therapists.length > 0 ? therapists : [
-                  {
-                    _id: 'usr_ther1',
-                    userId: 'usr_ther1',
-                    name: 'Dr. Ananya Iyer',
-                    specialty: 'Sports Rehabilitation Specialist',
-                    ratingAvg: 4.9,
-                    ratingCount: 42,
-                    experienceYears: 8,
-                    clinicName: 'One Medical Hub',
-                    consultationFee: 120000,
-                    languages: ['ENGLISH', 'HINDI', 'SPANISH'],
-                    user: { name: 'Dr. Ananya Iyer' }
-                  },
-                  {
-                    _id: 'usr_ther2',
-                    userId: 'usr_ther2',
-                    name: 'Dr. Arjun Mehta',
-                    specialty: 'Spine & Lumbar Rehab Specialist',
-                    ratingAvg: 4.9,
-                    ratingCount: 38,
-                    experienceYears: 12,
-                    clinicName: 'One Medical HQ',
-                    consultationFee: 150000,
-                    languages: ['ENGLISH', 'HINDI'],
-                    user: { name: 'Dr. Arjun Mehta' }
-                  },
-                ])
+                {(() => {
+                  const defaultDocs = [
+                    {
+                      _id: 'usr_ther1',
+                      userId: 'usr_ther1',
+                      name: 'Dr. Ananya Iyer',
+                      specialty: 'Sports Rehabilitation Specialist',
+                      ratingAvg: 4.9,
+                      ratingCount: 42,
+                      experienceYears: 8,
+                      clinicName: 'One Medical Hub',
+                      consultationFee: 120000,
+                      languages: ['ENGLISH', 'HINDI', 'SPANISH'],
+                      user: { name: 'Dr. Ananya Iyer' }
+                    },
+                    {
+                      _id: 'usr_ther2',
+                      userId: 'usr_ther2',
+                      name: 'Dr. Arjun Mehta',
+                      specialty: 'Spine & Lumbar Rehab Specialist',
+                      ratingAvg: 4.9,
+                      ratingCount: 38,
+                      experienceYears: 12,
+                      clinicName: 'One Medical HQ',
+                      consultationFee: 150000,
+                      languages: ['ENGLISH', 'HINDI'],
+                      user: { name: 'Dr. Arjun Mehta' }
+                    },
+                  ];
+
+                  const merged = [...therapists];
+                  defaultDocs.forEach(defDoc => {
+                    const exists = therapists.some(t => {
+                      const tName = t.user?.name || t.name || '';
+                      return tName.toLowerCase().includes(defDoc.name.toLowerCase()) || 
+                             defDoc.name.toLowerCase().includes(tName.toLowerCase());
+                    });
+                    if (!exists) {
+                      merged.push(defDoc);
+                    }
+                  });
+                  return merged;
+                })()}
                   .filter(d => {
                     const docName = d.user?.name || d.name || 'Specialist';
                     const docSpec = Array.isArray(d.specializations) ? d.specializations.join(' ') : (d.specialty || '');

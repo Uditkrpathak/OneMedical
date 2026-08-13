@@ -13,7 +13,18 @@ const PatientProfileSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  dob:               { type: Date },
+  dob: {
+    type: Date,
+    validate: {
+      validator: function(v) {
+        if (!v) return true;
+        const currentYear = new Date().getFullYear();
+        const year = v.getFullYear();
+        return year >= 1900 && year <= currentYear && v <= new Date();
+      },
+      message: props => `${props.value} is not a valid Date of Birth! Year must be between 1900 and current year, and date cannot be in the future.`
+    }
+  },
   gender:            { type: String, enum: ['male', 'female', 'other', 'prefer_not_to_say'] },
   height:            { type: Number },
   weight:            { type: Number },

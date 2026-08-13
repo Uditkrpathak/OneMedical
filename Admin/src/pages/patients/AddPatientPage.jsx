@@ -48,6 +48,48 @@ export default function AddPatientPage() {
   const handleSubmit = async e => {
     e.preventDefault();
     if (!form.firstName || !form.mobile) { alert('First name and mobile are required.'); return; }
+
+    const nameRegex = /^[a-zA-Z\s.-]+$/;
+    if (!nameRegex.test(form.firstName.trim()) || (form.lastName && !nameRegex.test(form.lastName.trim()))) {
+      alert('First name and Last name can only contain letters, spaces, dots, or hyphens.');
+      return;
+    }
+
+    if (form.mobile) {
+      const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+      const digitsOnly = form.mobile.replace(/\D/g, '');
+      if (!phoneRegex.test(form.mobile) || digitsOnly.length < 10 || digitsOnly.length > 15) {
+        alert('Please enter a valid 10-15 digit Mobile Number.');
+        return;
+      }
+    }
+
+    if (form.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(form.email.trim())) {
+        alert('Please enter a valid Email Address.');
+        return;
+      }
+    }
+
+    if (form.dob) {
+      const parts = form.dob.split('-');
+      if (parts.length !== 3 || parts[0].length !== 4) {
+        alert('Please enter a valid Date of Birth with a 4-digit year.');
+        return;
+      }
+      const year = parseInt(parts[0], 10);
+      const currentYear = new Date().getFullYear();
+      if (year < 1900 || year > currentYear) {
+        alert('Date of Birth year must be between 1900 and the current year.');
+        return;
+      }
+      const dobDate = new Date(form.dob);
+      if (dobDate > new Date()) {
+        alert('Date of Birth cannot be in the future.');
+        return;
+      }
+    }
     
     setLoading(true);
     try {
@@ -55,7 +97,7 @@ export default function AddPatientPage() {
         name: `${form.firstName} ${form.lastName}`.trim(),
         phoneNumber: form.mobile,
         email: form.email,
-        dob: form.dob,
+        dob: form.dob || null,
         gender: form.gender !== 'Select Gender' ? form.gender : 'Other',
         condition: form.condition,
         therapist: form.therapist !== 'Select Therapist' ? form.therapist : 'Dr. Ananya Sharma',

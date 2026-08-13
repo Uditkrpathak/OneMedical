@@ -76,12 +76,58 @@ export default function CompleteProfileScreen({ navigation }) {
       return;
     }
 
+    const nameRegex = /^[a-zA-Z\s.-]+$/;
+    if (!nameRegex.test(data.fullName.trim())) {
+      Alert.alert('Validation Error', 'Full Name can only contain letters, spaces, dots, or hyphens.');
+      return;
+    }
+
+    if (data.dob) {
+      const validateDOB = (dobString) => {
+        const regex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/([12]\d{3})$/;
+        if (!regex.test(dobString)) return false;
+        
+        const parts = dobString.split('/');
+        const month = parseInt(parts[0], 10);
+        const day = parseInt(parts[1], 10);
+        const year = parseInt(parts[2], 10);
+
+        const currentYear = new Date().getFullYear();
+        if (year < 1900 || year > currentYear) return false;
+
+        const daysInMonth = new Date(year, month, 0).getDate();
+        if (day > daysInMonth) return false;
+
+        const dobDate = new Date(year, month - 1, day);
+        if (dobDate > new Date()) return false;
+
+        return true;
+      };
+
+      if (!validateDOB(data.dob)) {
+        Alert.alert('Validation Error', 'Please enter a valid Date of Birth in mm/dd/yyyy format (year must be 4 digits, e.g. 1996, and not in the future).');
+        return;
+      }
+    }
+
+    const heightNum = parseInt(data.height, 10);
+    if (isNaN(heightNum) || heightNum < 50 || heightNum > 250) {
+      Alert.alert('Validation Error', 'Height must be a valid number between 50 and 250 cm.');
+      return;
+    }
+
+    const weightNum = parseInt(data.weight, 10);
+    if (isNaN(weightNum) || weightNum < 10 || weightNum > 300) {
+      Alert.alert('Validation Error', 'Weight must be a valid number between 10 and 300 kg.');
+      return;
+    }
+
     const profilePayload = {
       name: data.fullName.trim(),
       dob: data.dob || null,
       gender: data.gender,
-      height: parseInt(data.height) || 175,
-      weight: parseInt(data.weight) || 68,
+      height: heightNum,
+      weight: weightNum,
       primaryConcern: data.primaryConcern,
       avatarUrl: profilePhoto,
     };

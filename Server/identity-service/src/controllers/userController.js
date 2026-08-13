@@ -36,7 +36,7 @@ export const updatePatientProfile = async (req, res) => {
     if (req.body.name) userUpdates.name = req.body.name;
     const updatedUser = await User.findByIdAndUpdate(userId, userUpdates, { new: true });
 
-    const profile = await PatientProfile.findOneAndUpdate({ userId }, updates, { new: true, upsert: true });
+    const profile = await PatientProfile.findOneAndUpdate({ userId }, updates, { new: true, upsert: true, runValidators: true });
     res.json({ success: true, data: { user: updatedUser ? updatedUser.toSafeObject() : null, profile } });
   } catch (err) {
     res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: err.message } });

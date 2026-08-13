@@ -16,6 +16,20 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { updateProfile } from '../authSlice';
 import userApi from '../userApi';
 
+const formatDateToMMDDYYYY = (dateVal) => {
+  if (!dateVal) return '';
+  try {
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return String(dateVal);
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${month}/${day}/${year}`;
+  } catch (e) {
+    return String(dateVal);
+  }
+};
+
 export default function EditPatientProfileScreen({ navigation }) {
   const dispatch = useDispatch();
   const { user, token } = useSelector((state) => state.auth);
@@ -23,7 +37,7 @@ export default function EditPatientProfileScreen({ navigation }) {
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState(user?.phoneNumber || '');
-  const [dob, setDob] = useState(user?.dob || '');
+  const [dob, setDob] = useState(formatDateToMMDDYYYY(user?.dob) || '');
   const [gender, setGender] = useState(user?.gender || 'Other');
 
   const [height, setHeight] = useState(user?.height ? String(user.height) : '170');
@@ -37,13 +51,91 @@ export default function EditPatientProfileScreen({ navigation }) {
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
+    if (!name || name.trim().length < 2) {
+      Alert.alert('Validation Error', 'Please enter a valid Full Name (min 2 characters).');
+      return;
+    }
+
+    const nameRegex = /^[a-zA-Z\s.-]+$/;
+    if (!nameRegex.test(name.trim())) {
+      Alert.alert('Validation Error', 'Full Name can only contain letters, spaces, dots, or hyphens.');
+      return;
+    }
+
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        Alert.alert('Validation Error', 'Please enter a valid email address.');
+        return;
+      }
+    }
+
+    if (phone) {
+      const phoneRegex = /^\+?[1-9]\d{1,14}$/; // E.164 phone format check
+      const digitsOnly = phone.replace(/\D/g, '');
+      if (!phoneRegex.test(phone) || digitsOnly.length < 10 || digitsOnly.length > 15) {
+        Alert.alert('Validation Error', 'Please enter a valid 10-15 digit Mobile Number.');
+        return;
+      }
+    }
+
+    if (dob) {
+      const validateDOB = (dobString) => {
+        const regex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/([12]\d{3})$/;
+        if (!regex.test(dobString)) return false;
+        
+        const parts = dobString.split('/');
+        const month = parseInt(parts[0], 10);
+        const day = parseInt(parts[1], 10);
+        const year = parseInt(parts[2], 10);
+
+        const currentYear = new Date().getFullYear();
+        if (year < 1900 || year > currentYear) return false;
+
+        const daysInMonth = new Date(year, month, 0).getDate();
+        if (day > daysInMonth) return false;
+
+        const dobDate = new Date(year, month - 1, day);
+        if (dobDate > new Date()) return false;
+
+        return true;
+      };
+
+      if (!validateDOB(dob)) {
+        Alert.alert('Validation Error', 'Please enter a valid Date of Birth in mm/dd/yyyy format (year must be 4 digits, e.g. 1996, and not in the future).');
+        return;
+      }
+    }
+
+    const heightNum = Number(height);
+    if (isNaN(heightNum) || heightNum < 50 || heightNum > 250) {
+      Alert.alert('Validation Error', 'Height must be a valid number between 50 and 250 cm.');
+      return;
+    }
+
+    const weightNum = Number(weight);
+    if (isNaN(weightNum) || weightNum < 10 || weightNum > 300) {
+      Alert.alert('Validation Error', 'Weight must be a valid number between 10 and 300 kg.');
+      return;
+    }
+
     try {
       setSaving(true);
+      
+      // Convert mm/dd/yyyy back to ISO date or Date object for backend save
+      let formattedDob = null;
+      if (dob) {
+        const parts = dob.split('/');
+        formattedDob = new Date(parts[2], parts[0] - 1, parts[1]).toISOString();
+      }
+
       const payload = {
-        name,
-        email,
-        heightCm: Number(height),
-        weightKg: Number(weight),
+        name: name.trim(),
+        email: email.trim(),
+        dob: formattedDob,
+        gender: gender.toLowerCase(),
+        heightCm: heightNum,
+        weightKg: weightNum,
         bloodGroup,
         emergencyContact: {
           name: emergencyName,
@@ -54,11 +146,13 @@ export default function EditPatientProfileScreen({ navigation }) {
 
       await userApi.updatePatientProfile(token, payload);
       dispatch(updateProfile({ 
-        name, 
-        email, 
+        name: name.trim(), 
+        email: email.trim(), 
         phoneNumber: phone || user?.phoneNumber, 
-        height: Number(height), 
-        weight: Number(weight), 
+        dob: formattedDob,
+        gender: gender.toLowerCase(),
+        height: heightNum, 
+        weight: weightNum, 
         bloodGroup, 
         emergencyContact: { name: emergencyName, relationship: emergencyRelation, phone: emergencyPhone }, 
         isProfileCompleted: true 

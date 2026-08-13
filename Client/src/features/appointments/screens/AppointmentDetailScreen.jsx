@@ -109,26 +109,26 @@ export default function AppointmentDetailScreen({ route, navigation }) {
               <Ionicons name="chatbubble-ellipses-outline" size={16} color="#003D9B" style={{ marginRight: 6 }} />
               <Text style={styles.contactBtnText}>Message</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.contactBtn, { backgroundColor: '#fef3c7', borderColor: '#fde047' }]}
-              onPress={() =>
-                navigation.navigate('WriteDoctorReview', {
-                  doctor: {
-                    name: booking.doctorName,
-                    specialty: booking.specialty,
-                    clinic: booking.clinic,
-                    rating: 4.9,
-                    reviewsCount: 128,
-                  },
-                  booking,
-                })
-              }
-            >
-              <Ionicons name="star" size={16} color="#b45309" style={{ marginRight: 6 }} />
-              <Text style={[styles.contactBtnText, { color: '#b45309', fontWeight: '700' }]}>Rate Doctor</Text>
-            </TouchableOpacity>
           </View>
+
+          <TouchableOpacity
+            style={[styles.rateDoctorBtn, { backgroundColor: '#fef3c7', borderColor: '#fde047', marginTop: 10 }]}
+            onPress={() =>
+              navigation.navigate('WriteDoctorReview', {
+                doctor: {
+                  name: booking.doctorName,
+                  specialty: booking.specialty,
+                  clinic: booking.clinic,
+                  rating: 4.9,
+                  reviewsCount: 128,
+                },
+                booking,
+              })
+            }
+          >
+            <Ionicons name="star" size={16} color="#b45309" style={{ marginRight: 6 }} />
+            <Text style={[styles.contactBtnText, { color: '#b45309', fontWeight: '700' }]}>Rate Doctor</Text>
+          </TouchableOpacity>
         </View>
 
         {/* APPOINTMENT INFO GRID */}
@@ -380,6 +380,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#003D9B',
+  },
+  rateDoctorBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 42,
+    borderRadius: 12,
+    borderWidth: 1,
   },
   infoGridCard: {
     backgroundColor: '#ffffff',

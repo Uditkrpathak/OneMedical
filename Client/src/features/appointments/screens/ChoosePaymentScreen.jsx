@@ -23,6 +23,8 @@ export default function ChoosePaymentScreen({ route, navigation }) {
   const dateStr = route.params?.dateStr || 'Tue, 17 Sept';
   const timeStr = route.params?.timeStr || '09:30 AM';
 
+  const doctorFee = doctor.consultationFee ? Math.round(doctor.consultationFee / 100) : (doctor.fee || 1200);
+
   const [paymentType, setPaymentType] = useState('online'); // 'online' | 'clinic'
   const [onlineMethod, setOnlineMethod] = useState('upi'); // 'upi' | 'card' | 'netbanking' | 'wallet'
 
@@ -154,7 +156,7 @@ export default function ChoosePaymentScreen({ route, navigation }) {
         <View style={styles.billBox}>
           <View style={styles.billRow}>
             <Text style={styles.billLabel}>Consultation Fee</Text>
-            <Text style={styles.billValue}>₹{doctor.fee}</Text>
+            <Text style={styles.billValue}>₹{doctorFee}</Text>
           </View>
           <View style={styles.billRow}>
             <Text style={styles.billLabel}>Service Tax</Text>
@@ -165,7 +167,7 @@ export default function ChoosePaymentScreen({ route, navigation }) {
 
           <View style={styles.billRow}>
             <Text style={styles.totalLabel}>Total Amount</Text>
-            <Text style={styles.totalAmountText}>₹{doctor.fee}</Text>
+            <Text style={styles.totalAmountText}>₹{doctorFee}</Text>
           </View>
         </View>
 
@@ -189,12 +191,12 @@ export default function ChoosePaymentScreen({ route, navigation }) {
               dateStr,
               timeStr,
               paymentType,
-              amount: doctor.fee,
+              amount: doctorFee,
             })
           }
         >
           <Text style={styles.payBtnText}>
-            {paymentType === 'online' ? `Pay ₹${doctor.fee} Securely ➔` : 'Confirm Booking ➔'}
+            {paymentType === 'online' ? `Pay ₹${doctorFee} Securely ➔` : 'Confirm Booking ➔'}
           </Text>
         </TouchableOpacity>
       </View>

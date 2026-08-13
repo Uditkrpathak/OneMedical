@@ -26,8 +26,8 @@ const getHostIp = () => {
 };
 
 export const API_HOST = getHostIp();
-export const API_BASE_URL = `http://${API_HOST}:5000/api/v1`;
-export const SOCKET_URL = `http://${API_HOST}:5000`;
+export const API_BASE_URL = `https://onemedical-gateway.onrender.com/api/v1`;
+export const SOCKET_URL = `https://onemedical-gateway.onrender.com`;
 
 console.log(`[Config] Resolved API Base URL: ${API_BASE_URL}`);
 

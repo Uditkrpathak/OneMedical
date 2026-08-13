@@ -32,7 +32,7 @@ export const useNetworkStatus = () => {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 2000);
-        const res = await fetch('http://localhost:5000/healthz', { signal: controller.signal });
+        const res = await fetch('https://onemedical-gateway.onrender.com/healthz', { signal: controller.signal });
         clearTimeout(timeoutId);
         if (isMounted) setIsOnline(res.ok);
       } catch {

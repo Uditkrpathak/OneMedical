@@ -2,6 +2,10 @@
   "name": "onemedical",
   "main": "index.js",
   "version": "1.0.0",
+  "engines": {
+    "node": ">=20.11.0",
+    "npm": ">=10.2.4"
+  },
   "dependencies": {
     "@expo/ui": "~57.0.9",
     "@expo/vector-icons": "^15.0.2",

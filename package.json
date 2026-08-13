@@ -1,6 +1,10 @@
 {
   "name": "one-medical-monorepo",
   "version": "1.0.0",
+  "engines": {
+    "node": ">=20.11.0",
+    "npm": ">=10.2.4"
+  },
   "type": "module",
   "description": "One Medical Physiotherapy & Rehabilitation Platform Monorepo",
   "private": true,

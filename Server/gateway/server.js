@@ -189,7 +189,14 @@ app.get('/api/v1/health', async (req, res) => {
 
   res.json({
     status: 'ok',
-    gateway: { status: 'healthy', port: PORT },
+    gateway: { 
+      status: 'healthy', 
+      port: PORT,
+      urls: {
+        identity: IDENTITY_URL,
+        clinical: CLINICAL_URL
+      }
+    },
     services: results,
     timestamp: new Date().toISOString()
   });

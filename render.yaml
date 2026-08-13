@@ -1,0 +1,59 @@
+services:
+  - type: web
+    name: onemedical-identity
+    env: node
+    rootDir: Server/identity-service
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 5001
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+
+  - type: web
+    name: onemedical-clinical
+    env: node
+    rootDir: Server/clinical-service
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 5003
+      - key: MONGO_URI
+        sync: false
+      - key: RABBITMQ_URL
+        sync: false
+      - key: INTERNAL_API_KEY
+        generateValue: true
+
+  - type: web
+    name: onemedical-gateway
+    env: node
+    rootDir: Server/gateway
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: IDENTITY_SERVICE_URL
+        # We append the port because the identity service uses it internally, or we let Render proxy it to 5001.
+        # Actually Render internal hostnames route to the internal port automatically.
+        # Wait, if we use internal hostname, we need to prefix it with http:// and port
+        value: http://onemedical-identity:5001
+      - key: CLINICAL_SERVICE_URL
+        value: http://onemedical-clinical:5003
+      - key: INTERNAL_API_KEY
+        fromService:
+          type: web
+          name: onemedical-clinical
+          envVarKey: INTERNAL_API_KEY
+      - key: JWT_ACCESS_SECRET
+        fromService:
+          type: web
+          name: onemedical-identity
+          envVarKey: JWT_ACCESS_SECRET

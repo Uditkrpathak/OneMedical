@@ -130,7 +130,7 @@ export default function RecoveryMainScreen({ navigation }) {
         </View>
 
         {loading ? (
-          <ActivityIndicator color="#0284c7" size="small" style={{ marginVertical: 20 }} />
+          <ActivityIndicator color="#003D9B" size="small" style={{ marginVertical: 20 }} />
         ) : (
           <TouchableOpacity
             style={styles.programCard}
@@ -168,8 +168,8 @@ export default function RecoveryMainScreen({ navigation }) {
           </View>
 
           <View style={styles.achieveCard}>
-            <View style={[styles.achieveIconCircle, { backgroundColor: '#dbeafe' }]}>
-              <Ionicons name="checkmark-circle" size={20} color="#0284c7" />
+            <View style={[styles.achieveIconCircle, { backgroundColor: '#e6f0ff' }]}>
+              <Ionicons name="checkmark-circle" size={20} color="#003D9B" />
             </View>
             <Text style={styles.achieveValText}>24</Text>
             <Text style={styles.achieveLabelText}>Sessions</Text>
@@ -203,7 +203,7 @@ export default function RecoveryMainScreen({ navigation }) {
                     style={[
                       styles.barFill,
                       { height: item.height },
-                      item.active ? { backgroundColor: '#0284c7' } : { backgroundColor: '#cbd5e1' },
+                      item.active ? { backgroundColor: '#003D9B' } : { backgroundColor: '#cbd5e1' },
                     ]}
                   />
                 </View>

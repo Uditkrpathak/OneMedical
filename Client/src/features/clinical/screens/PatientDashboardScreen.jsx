@@ -108,7 +108,7 @@ export default function PatientDashboardScreen({ navigation }) {
               <Text style={styles.greetingText}>
                 {getGreeting()}, {user?.name || 'Sagar'} 👋
               </Text>
-              <Text style={styles.subGreetingText}>Let's continue your recovery journey.</Text>
+              <Text style={styles.subGreetingText}>{"Let's continue your recovery journey."}</Text>
             </View>
           </View>
 
@@ -136,7 +136,7 @@ export default function PatientDashboardScreen({ navigation }) {
           style={styles.appointmentHeroCard}
         >
           <View style={styles.heroHeaderRow}>
-            <Text style={styles.heroCardBadgeLabel}>TODAY'S APPOINTMENT</Text>
+            <Text style={styles.heroCardBadgeLabel}>{"TODAY'S APPOINTMENT"}</Text>
             <View style={styles.heroDateBadge}>
               <Ionicons name="calendar-outline" size={13} color="#ffffff" style={{ marginRight: 5 }} />
               <Text style={styles.heroDateText}>Oct 24</Text>
@@ -225,14 +225,16 @@ export default function PatientDashboardScreen({ navigation }) {
 
           {/* Quote Text */}
           <Text style={styles.recoveryQuoteText}>
-            "{activeProgram?.patientGoals || "You're making excellent progress."}"
+            {"\""}{activeProgram?.patientGoals || "You're making excellent progress."}{"\""}
           </Text>
         </View>
 
         {/* TODAY'S EXERCISES SECTION */}
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Today's Exercises</Text>
-          <Text style={styles.exerciseMetaText}>⏱️ {(exercises.length || 3) * 6} Minutes total | <Text style={{ fontWeight: '700', color: '#0f172a' }}>{exercises.length || 3} Exercises Assigned</Text></Text>
+        <View style={styles.exerciseHeaderCol}>
+          <Text style={styles.sectionTitle}>{"Today's Exercises"}</Text>
+          <Text style={styles.exerciseMetaText}>
+            ⏱️ {(exercises.length || 3) * 6} Min total  •  <Text style={{ fontWeight: '700', color: '#003D9B' }}>{exercises.length || 3} Exercises Assigned</Text>
+          </Text>
         </View>
 
         {/* Progress Bar */}
@@ -273,7 +275,7 @@ export default function PatientDashboardScreen({ navigation }) {
           onPress={() => navigation.navigate('ExerciseTimer', { exercise: exercises[0] || { name: 'Hamstring Stretch', sets: 3, reps: 10, durationSec: 30 } })}
         >
           <Ionicons name="play" size={16} color="#ffffff" style={{ marginRight: 6 }} />
-          <Text style={styles.startSessionButtonText}>Start Today's Session</Text>
+          <Text style={styles.startSessionButtonText}>{"Start Today's Session"}</Text>
         </TouchableOpacity>
 
         {/* QUICK ACTIONS 2x2 GRID */}
@@ -340,7 +342,7 @@ export default function PatientDashboardScreen({ navigation }) {
 
         {/* RECOMMENDED PHYSIOTHERAPISTS */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Recommended Physiotherapists</Text>
+          <Text style={[styles.sectionTitle, { fontSize: 15 }]}>Recommended Physiotherapists</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Book')}>
             <Text style={styles.viewAllText}>View All</Text>
           </TouchableOpacity>
@@ -501,12 +503,12 @@ export default function PatientDashboardScreen({ navigation }) {
         <View style={styles.tipCard}>
           <View style={styles.tipHeaderRow}>
             <View style={styles.tipIconCircle}>
-              <Ionicons name="bulb-outline" size={18} color="#0284c7" />
+              <Ionicons name="bulb-outline" size={18} color="#003D9B" />
             </View>
-            <Text style={styles.tipHeaderTitle}>Today's Recovery Tip</Text>
+            <Text style={styles.tipHeaderTitle}>{"Today's Recovery Tip"}</Text>
           </View>
           <Text style={styles.tipBodyText}>
-            Stretch for 5 minutes before starting today's exercises to improve flexibility and reduce muscle stiffness.
+            {"Stretch for 5 minutes before starting today's exercises to improve flexibility and reduce muscle stiffness."}
           </Text>
           <View style={styles.tipTag}>
             <Text style={styles.tipTagText}>RECOMMENDED BY YOUR PHYSIOTHERAPIST</Text>
@@ -794,6 +796,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 12,
+  },
+  exerciseHeaderCol: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+    gap: 4,
   },
   sectionTitle: {
     fontSize: 18,

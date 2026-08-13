@@ -454,7 +454,7 @@ export default function BookAppointmentScreen({ navigation }) {
                     }
                   });
                   return merged;
-                })()}
+                })()
                   .filter(d => {
                     const docName = d.user?.name || d.name || 'Specialist';
                     const docSpec = Array.isArray(d.specializations) ? d.specializations.join(' ') : (d.specialty || '');
@@ -1066,8 +1066,5 @@ const styles = StyleSheet.create({
   slotTextSelected: {
     color: '#003D9B',
     fontWeight: '800',
-  },
-  slotTextSelected: {
-    color: '#ffffff',
   },
 });

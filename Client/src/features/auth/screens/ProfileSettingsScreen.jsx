@@ -15,6 +15,7 @@ import { CommonActions } from '@react-navigation/native';
 import { logout, updateProfile } from '../authSlice';
 import { useUpdatePatientProfileMutation, useGetMyProfileQuery } from '../authApiSlice';
 import { colors } from '../../../theme/colors';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 export default function ProfileSettingsScreen({ navigation }) {
   const dispatch = useDispatch();

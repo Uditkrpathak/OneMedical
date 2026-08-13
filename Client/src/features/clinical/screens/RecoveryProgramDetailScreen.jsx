@@ -83,7 +83,7 @@ export default function RecoveryProgramDetailScreen({ navigation }) {
         {/* TODAY'S SESSION CARD */}
         <View style={styles.sessionBannerCard}>
           <View style={styles.sessionBannerHeader}>
-            <Text style={styles.sessionBannerTitle}>Today's Session</Text>
+            <Text style={styles.sessionBannerTitle}>{"Today's Session"}</Text>
             <View style={styles.activePill}><Text style={styles.activePillText}>ACTIVE</Text></View>
           </View>
           <Text style={styles.sessionBannerSub}>5 Exercises • ⏱ 20 Mins • Std. Intensity</Text>
@@ -93,7 +93,7 @@ export default function RecoveryProgramDetailScreen({ navigation }) {
             activeOpacity={0.85}
             onPress={() => navigation.navigate('TodaysSession')}
           >
-            <Text style={styles.startSessionBtnText}>Start Today's Session ➔</Text>
+            <Text style={styles.startSessionBtnText}>{"Start Today's Session ➔"}</Text>
           </TouchableOpacity>
         </View>
 
@@ -149,11 +149,11 @@ export default function RecoveryProgramDetailScreen({ navigation }) {
         {/* NOTE FROM DR. IYER */}
         <View style={styles.noteCard}>
           <View style={styles.noteHeaderRow}>
-            <Ionicons name="chatbox-ellipses-outline" size={18} color="#0284c7" style={{ marginRight: 8 }} />
+            <Ionicons name="chatbox-ellipses-outline" size={18} color="#003D9B" style={{ marginRight: 8 }} />
             <Text style={styles.noteTitle}>Note from Dr. Iyer</Text>
           </View>
           <Text style={styles.noteBodyText}>
-            "Focus on slow controlled movements and avoid sudden twisting. Breathing control is vital today—inhale as you prepare, exhale deeply as you move into rotation."
+            {"\"Focus on slow controlled movements and avoid sudden twisting. Breathing control is vital today—inhale as you prepare, exhale deeply as you move into rotation.\""}
           </Text>
           <Text style={styles.noteTimeText}>Received 2 hours ago</Text>
         </View>

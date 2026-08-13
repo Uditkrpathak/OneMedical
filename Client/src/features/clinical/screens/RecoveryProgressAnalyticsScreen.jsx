@@ -67,7 +67,7 @@ export default function RecoveryProgressAnalyticsScreen({ navigation }) {
               <Text style={styles.chartDayLabel}>Thu</Text>
               <Text style={styles.chartDayLabel}>Fri</Text>
               <Text style={styles.chartDayLabel}>Sat</Text>
-              <Text style={[styles.chartDayLabel, { color: '#0284c7', fontWeight: '800' }]}>Today</Text>
+              <Text style={[styles.chartDayLabel, { color: '#003D9B', fontWeight: '800' }]}>Today</Text>
             </View>
           </View>
         </View>
@@ -75,7 +75,7 @@ export default function RecoveryProgressAnalyticsScreen({ navigation }) {
         {/* 4 STAT METRICS GRID */}
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
-            <Ionicons name="checkmark-circle-outline" size={20} color="#0284c7" style={{ marginBottom: 4 }} />
+            <Ionicons name="checkmark-circle-outline" size={20} color="#003D9B" style={{ marginBottom: 4 }} />
             <Text style={styles.statVal}>24</Text>
             <Text style={styles.statLab}>Sessions</Text>
           </View>
@@ -132,7 +132,7 @@ export default function RecoveryProgressAnalyticsScreen({ navigation }) {
         <View style={styles.evalCard}>
           <Text style={styles.evalDocName}>DR. SARAH IYER • THERAPIST</Text>
           <Text style={styles.evalText}>
-            "You're showing excellent stability in your lumbar spine movements. Keep up the consistency!"
+            {"\"You're showing excellent stability in your lumbar spine movements. Keep up the consistency!\""}
           </Text>
         </View>
 
@@ -220,14 +220,14 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 26,
     borderWidth: 4,
-    borderColor: '#0284c7',
+    borderColor: '#003D9B',
     alignItems: 'center',
     justifyContent: 'center',
   },
   scoreGaugeText: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#0284c7',
+    color: '#003D9B',
   },
   statusTrendText: {
     fontSize: 12,
@@ -257,8 +257,8 @@ const styles = StyleSheet.create({
   chartTimePill: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#0284c7',
-    backgroundColor: '#e0f2fe',
+    color: '#003D9B',
+    backgroundColor: '#e6f0ff',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   chartLineTrack: {
     height: 60,
     borderBottomWidth: 2,
-    borderBottomColor: '#0284c7',
+    borderBottomColor: '#003D9B',
     position: 'relative',
     justifyContent: 'center',
   },
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#0284c7',
+    backgroundColor: '#003D9B',
   },
   chartDataPoint2: {
     position: 'absolute',
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#0284c7',
+    backgroundColor: '#003D9B',
   },
   chartDataPoint3: {
     position: 'absolute',
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#0284c7',
+    backgroundColor: '#003D9B',
   },
   chartDataPoint4: {
     position: 'absolute',
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#0284c7',
+    backgroundColor: '#003D9B',
     borderWidth: 2,
     borderColor: '#ffffff',
   },
@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
   evalDocName: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#0284c7',
+    color: '#003D9B',
     letterSpacing: 0.8,
     marginBottom: 4,
   },
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
   nextMsCard: {
-    backgroundColor: '#0284c7',
+    backgroundColor: '#003D9B',
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
   },
   nextMsSub: {
     fontSize: 12,
-    color: '#e0f2fe',
+    color: '#e6f0ff',
   },
   bottomCtaBar: {
     position: 'absolute',
@@ -421,12 +421,12 @@ const styles = StyleSheet.create({
     borderTopColor: '#f1f5f9',
   },
   continueBtn: {
-    backgroundColor: '#0284c7',
+    backgroundColor: '#003D9B',
     height: 52,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#0284c7',
+    shadowColor: '#003D9B',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,

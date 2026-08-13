@@ -14,6 +14,8 @@ services:
         generateValue: true
       - key: JWT_REFRESH_SECRET
         generateValue: true
+      - key: CLINICAL_SERVICE_URL
+        value: https://onemedical-clinical.onrender.com
 
   - type: web
     name: onemedical-clinical
@@ -41,12 +43,9 @@ services:
       - key: PORT
         value: 5000
       - key: IDENTITY_SERVICE_URL
-        # We append the port because the identity service uses it internally, or we let Render proxy it to 5001.
-        # Actually Render internal hostnames route to the internal port automatically.
-        # Wait, if we use internal hostname, we need to prefix it with http:// and port
-        value: http://onemedical-identity:5001
+        value: https://onemedical-identity.onrender.com
       - key: CLINICAL_SERVICE_URL
-        value: http://onemedical-clinical:5003
+        value: https://onemedical-clinical.onrender.com
       - key: INTERNAL_API_KEY
         fromService:
           type: web
